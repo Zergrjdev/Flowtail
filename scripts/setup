@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Checks prerequisites and offers to install a private JDK. Gradle comes from Paper's checked-in wrapper.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+need_java=$(sed -nE 's/^java_runtime[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' versions.toml | head -1)
+if [ -z "$need_java" ]; then echo "[ERROR] Could not read java_runtime from versions.toml."; exit 1; fi
+check_only=0; [ "${1:-}" = "--check" ] && check_only=1
+ok=1
+
+if command -v git >/dev/null 2>&1; then echo "[ok] $(git --version)"; else
+  ok=0; echo "[MISSING] Git. Install it, then run scripts/setup again:"; echo "  Arch/CachyOS: sudo pacman -S git"; echo "  Ubuntu/Debian: sudo apt install git"; echo "  macOS: xcode-select --install";
+fi
+
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then
+  echo "[ok] Python $(python3 --version) (Phase 1 tools)"
+else
+  ok=0; echo "[MISSING] Python 3.10 or newer (needed for FlowTail settings, tuning and benchmark tools)."
+  echo "  Arch/CachyOS: sudo pacman -S python"; echo "  Ubuntu/Debian: sudo apt install python3"; echo "  Fedora: sudo dnf install python3"
+fi
+
+find_java() {
+  local c v
+  for c in "${JAVA_HOME:+$JAVA_HOME/bin/java}" ".tools/jdk-$need_java/bin/java" ".tools/jdk-$need_java/Contents/Home/bin/java" "$(command -v java 2>/dev/null || true)"; do
+    [ -n "$c" ] && [ -x "$c" ] || continue
+    v=$("$c" -version 2>&1 | head -1 | sed -nE 's/.*"([0-9]+).*/\1/p')
+    if [ -n "$v" ] && [ "$v" -ge "$need_java" ] 2>/dev/null; then echo "$c"; return 0; fi
+  done
+  return 1
+}
+if java_path=$(find_java); then echo "[ok] Java $need_java or newer: $java_path"; else
+  ok=0; echo "[MISSING] Java $need_java or newer (required by this Minecraft version)."
+  echo "  Arch/CachyOS: sudo pacman -S jdk${need_java}-openjdk"
+  echo "  Ubuntu/Debian: sudo apt install openjdk-${need_java}-jdk"
+  echo "  macOS: install Temurin $need_java from https://adoptium.net/"
+  if [ "$check_only" -eq 0 ]; then
+    os=linux; [ "$(uname -s)" = Darwin ] && os=mac
+    arch=$(uname -m); case "$arch" in x86_64) arch=x64;; aarch64|arm64) arch=aarch64;; esac
+    if command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+      read -r -p "Download a private JDK $need_java into .tools/? About 200 MB. [y/N] " answer
+      case "$answer" in y|Y)
+        mkdir -p .tools
+        url="https://api.adoptium.net/v3/binary/latest/$need_java/ga/$os/$arch/jdk/hotspot/normal/eclipse"
+        if curl -fL "$url" -o .tools/jdk-download.tar.gz && mkdir -p ".tools/jdk-$need_java" && tar -xzf .tools/jdk-download.tar.gz -C ".tools/jdk-$need_java" --strip-components=1; then
+          rm -f .tools/jdk-download.tar.gz
+          java_path=$(find_java) && { echo "[ok] Installed Java at $java_path"; ok=1; }
+        else echo "[ERROR] JDK download or extraction failed. Check internet access, or install Java using the instructions above."; fi
+        ;;
+      *) echo "Skipped JDK download.";;
+      esac
+    else echo "[ERROR] curl and tar are needed for the automatic JDK download. Install them or use the manual install instructions."; fi
+  fi
+fi
+
+if [ -x upstream/Paper/gradlew ]; then
+  echo "[ok] Gradle wrapper found in upstream/Paper (no separate Gradle install needed)."
+elif [ -d upstream/Paper ]; then
+  ok=0; echo "[MISSING] Paper's Gradle wrapper is missing from upstream/Paper. Re-clone the upstream checkout, then rerun setup."
+else echo "[info] Gradle wrapper will be provided by Paper when scripts/build-upstream-paper.sh clones it."; fi
+
+if [ "$ok" -eq 1 ]; then echo; echo "Prerequisites are ready. Next: bash scripts/build-upstream-paper.sh"; exit 0; fi
+echo; echo "Setup is incomplete. Follow each [MISSING] instruction, then run scripts/setup again."; exit 1

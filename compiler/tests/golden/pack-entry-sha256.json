@@ -1,0 +1,15 @@
+{
+  "assets/example/items/rock.json": "6c2305fd11db6e5bd43ca1dec37ffd63c73c6ab044f43f10948864f0ced03706",
+  "assets/example/items/ruby.json": "e9d819c33bd9e3a9908ffc62649f625dd3c43997e8a90c0582c04da70dfcfeb1",
+  "assets/example/items/ruby_sword.json": "37dfede228498bb452fe8975aec42c956ca4f7b0d61bf7416dba0c96d27fe07e",
+  "assets/example/lang/en_us.json": "b770f0dbc1408361d18e24ffa6431e16b134ee2948ac901b91805fc3c1b02329",
+  "assets/example/models/block/rock.json": "edba23895487e94eccb8015c80d71ccc0b92a013cd428af0544982a929918a38",
+  "assets/example/models/item/ruby.json": "a9ec00092cb682339b91ba02b6ae36f264a79a69d9a972b38ae403c8aa5adb46",
+  "assets/example/models/item/ruby_sword.json": "e08bf4ff1ebe11e06d1c2a35caf7ef106a7e05ae5b4eb16bdb48799301912fb8",
+  "assets/example/textures/block/rock.png": "01d2331ff50b971d55e18aaa7ccc1917c3c319d640d0d9c7fa68cf82bc4460eb",
+  "assets/example/textures/item/ruby.png": "742478ed1c5ae1f7dde5f0e6f6c55a63c8675602372d9f4e6a8c866a41f03eb0",
+  "assets/example/textures/item/ruby_sword.png": "c227d0fa8cd3dccddf2e2f53c7bcf1a74035b6f20ff198b50f99119a023dce0d",
+  "assets/example/textures/painting/sunset.png": "c076735a151198ee4ec6f844ec7f78103656fcd58ec730c3caf30e6d3a6d0e74",
+  "assets/minecraft/blockstates/note_block.json": "3a4a35dd0ed090f19dbac84b939973382d20059e24cb43f813c990e8d68f1cf9",
+  "pack.mcmeta": "1125052864d419b02770eff4f837c2783ff599574ccfaf0f1685de5f913aa347"
+}

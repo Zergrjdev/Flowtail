@@ -1,0 +1,15 @@
+# SINGLE SOURCE OF TRUTH for names and versions (AGENTS.md rule 8). Edit here only.
+[product]
+software_name = "FlowTail"        # working name (Q21); change with scripts/rename.sh
+properties_file = "flowtail.properties"
+
+[minecraft]
+java_edition = "26.3"             # verified 2026-11-20 (R-01)
+java_runtime = 25                 # Mojang requires Java 25 since 26.1
+resource_pack_format = [97, 1]     # verified from the 26.3 server jar via scripts/mc-pack-format.py
+
+[upstream.paper]
+repo = "https://github.com/PaperMC/Paper"
+ref = "main"                      # no ver/26.3.x branch or 26.3 tag existed on 2026-11-20; main = 26.3
+pinned_commit = "1eda666f33904ba17fd5c14973a3ea62eca10b0c"   # main at 2026-11-20; update when rebasing
+build_tasks = ["applyPatches", "createPaperclipJar"]

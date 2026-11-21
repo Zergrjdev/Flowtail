@@ -1,0 +1,8 @@
+FlowTail (working name) — Copyright (c) the FlowTail contributors.
+Licensed under the GNU General Public License v3.0 only (see LICENSE).
+
+This project is built from patches applied on top of PaperMC/Paper (GPL-3.0; some Paper
+patches are MIT or carry other licences noted in their headers). Upstream code is downloaded
+at build time and is NOT committed here. See THIRD_PARTY.md.
+
+NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.

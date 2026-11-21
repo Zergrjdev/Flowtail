@@ -1,0 +1,18 @@
+{
+  "pools": {
+    "cube.note_block": {
+      "block": "minecraft:note_block",
+      "slots": {
+        "example:rock": {
+          "retired": false,
+          "state": {
+            "instrument": "harp",
+            "note": "0",
+            "powered": "true"
+          }
+        }
+      }
+    }
+  },
+  "schema": 0
+}

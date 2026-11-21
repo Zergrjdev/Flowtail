@@ -1,0 +1,18 @@
+[07:49:33] [ServerMain/INFO]: Starting provider: vanilla/Biome Parameters
+[07:49:34] [ServerMain/INFO]: vanilla/Biome Parameters finished after 329 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Default Components
+[07:49:34] [ServerMain/INFO]: vanilla/Default Components finished after 128 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Block List
+[07:49:34] [ServerMain/INFO]: vanilla/Block List finished after 158 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Command Syntax
+[07:49:34] [ServerMain/INFO]: vanilla/Command Syntax finished after 166 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Registry Dump
+[07:49:34] [ServerMain/INFO]: vanilla/Registry Dump finished after 10 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Packet Report
+[07:49:34] [ServerMain/INFO]: vanilla/Packet Report finished after 82 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Datapack Structure
+[07:49:34] [ServerMain/INFO]: vanilla/Datapack Structure finished after 1 ms
+[07:49:34] [ServerMain/INFO]: Starting provider: vanilla/Json RPC API schema
+[07:49:34] [ServerMain/INFO]: vanilla/Json RPC API schema finished after 1 ms
+[07:49:34] [ServerMain/INFO]: All providers took: 884 ms
+[07:49:34] [ServerMain/INFO]: Caching: total files: 1666, old count: 0, new count: 1666, removed stale: 0, written: 1666

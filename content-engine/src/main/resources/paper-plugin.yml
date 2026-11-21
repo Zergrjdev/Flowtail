@@ -1,0 +1,11 @@
+name: FlowTailContent
+version: 0.1.0
+main: dev.flowtail.content.FlowTailContentPlugin
+bootstrapper: dev.flowtail.content.ContentBootstrap
+api-version: '26.3'
+load: STARTUP
+description: FlowTail built-in content registry and runtime
+permissions:
+  flowtail.give:
+    description: Allows giving custom FlowTail items with /give.
+    default: op

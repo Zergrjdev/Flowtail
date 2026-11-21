@@ -1,0 +1,22 @@
+{
+  "schema": 0,
+  "id": "ruby_sword",
+  "name": "Ruby Sword",
+  "template": "sword",
+  "texture": "texture.png",
+  "stats": {
+    "attack_damage": 7.0,
+    "attack_speed": 1.6,
+    "durability": 1800,
+    "enchantability": 18,
+    "repair_with": ["example:ruby"]
+  },
+  "behaviors": { "on_hit": "example:ruby_burn" },
+  "recipes": [
+    {
+      "type": "shaped",
+      "pattern": [" R ", " R ", " S "],
+      "key": { "R": "example:ruby", "S": "minecraft:stick" }
+    }
+  ]
+}

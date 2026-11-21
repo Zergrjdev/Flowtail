@@ -1,0 +1,16 @@
+{
+  "schema": 0,
+  "id": "sunset",
+  "name": "Sunset",
+  "author": "Example",
+  "texture": "texture.png",
+  "width": 2,
+  "height": 1,
+  "item": { "auto": true },
+  "recipes": [
+    {
+      "type": "shapeless",
+      "ingredients": ["minecraft:painting", "minecraft:orange_dye"]
+    }
+  ]
+}

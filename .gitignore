@@ -1,0 +1,13 @@
+.tools/
+FlowTail-source*.zip
+build/
+.gradle/
+upstream/
+run/
+*.class
+__pycache__/
+node_modules/
+.idea/
+.vscode/
+eula.txt
+content-state/

@@ -1,0 +1,140 @@
+{
+  "blocks": [
+    {
+      "behaviors": {},
+      "carrier": {
+        "block": "minecraft:note_block",
+        "pool": "cube.note_block",
+        "state": {
+          "instrument": "harp",
+          "note": "0",
+          "powered": "true"
+        }
+      },
+      "drops": {
+        "type": "self"
+      },
+      "explosion": {
+        "breakable": true,
+        "drops": true
+      },
+      "hitbox": {
+        "collision": true,
+        "selection": true,
+        "type": "template"
+      },
+      "id": "example:rock",
+      "item": {
+        "auto": true,
+        "stack_size": 64
+      },
+      "light": 0,
+      "mining": {
+        "blast_resistance": 6.0,
+        "hardness": 1.5,
+        "requires_tool": true,
+        "tier": "stone",
+        "tool": "pickaxe"
+      },
+      "model": "example:block/rock",
+      "name": "Rock",
+      "particles": {
+        "break": "auto"
+      },
+      "recipes": [],
+      "sounds": {
+        "preset": "stone"
+      },
+      "states": {},
+      "template": "cube",
+      "ticking": {
+        "enabled": false
+      }
+    }
+  ],
+  "compiler": "0.1.0",
+  "items": [
+    {
+      "base": "minecraft:paper",
+      "behaviors": {},
+      "id": "example:ruby",
+      "item_model": "example:ruby",
+      "name": "Ruby",
+      "recipes": [],
+      "stack_size": 64,
+      "template": "generic"
+    },
+    {
+      "base": "minecraft:iron_sword",
+      "behaviors": {
+        "on_hit": "example:ruby_burn"
+      },
+      "id": "example:ruby_sword",
+      "item_model": "example:ruby_sword",
+      "name": "Ruby Sword",
+      "recipes": [
+        {
+          "key": {
+            "R": "example:ruby",
+            "S": "minecraft:stick"
+          },
+          "pattern": [
+            " R ",
+            " R ",
+            " S "
+          ],
+          "type": "shaped"
+        }
+      ],
+      "stack_size": 64,
+      "stats": {
+        "attack_damage": 7.0,
+        "attack_speed": 1.6,
+        "durability": 1800,
+        "enchantability": 18,
+        "repair_with": [
+          "example:ruby"
+        ]
+      },
+      "template": "sword"
+    }
+  ],
+  "pack_format": [
+    97,
+    1
+  ],
+  "paintings": [
+    {
+      "asset_id": "example:sunset",
+      "author": "Example",
+      "height": 1,
+      "id": "example:sunset",
+      "item": {
+        "auto": true
+      },
+      "name": "Sunset",
+      "recipes": [
+        {
+          "ingredients": [
+            "minecraft:painting",
+            "minecraft:orange_dye"
+          ],
+          "type": "shapeless"
+        }
+      ],
+      "width": 2
+    }
+  ],
+  "plugins": [
+    {
+      "api": "0.x",
+      "has_code": false,
+      "has_datapack": false,
+      "id": "example",
+      "name": "Example Plugin",
+      "version": "0.1.0"
+    }
+  ],
+  "retired_blocks": [],
+  "schema": 0
+}

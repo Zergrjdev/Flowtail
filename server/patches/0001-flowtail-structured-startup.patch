@@ -1,0 +1,12 @@
+diff --git a/paper-server/src/main/java/org/bukkit/craftbukkit/Main.java b/paper-server/src/main/java/org/bukkit/craftbukkit/Main.java
+index eb0ac87536..2177cd5b24 100644
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -22,6 +22,7 @@ public class Main {
+     // Paper end - Reset loggers after shutdown
+ 
+     public static void main(String[] args) {
++        System.out.println("{\"time\":\"" + java.time.Instant.now() + "\",\"level\":\"INFO\",\"source\":\"startup\",\"plugin_id\":null,\"content_id\":null,\"message\":\"FlowTail server starting\"}"); // FlowTail - structured startup banner
+         if (System.getProperty("jdk.nio.maxCachedBufferSize") == null) System.setProperty("jdk.nio.maxCachedBufferSize", "262144"); // Paper - cap per-thread NIO cache size; https://www.evanjones.ca/java-bytebuffer-leak.html
+ 
+         if (System.getProperty("joml.nounsafe") == null) {

@@ -1,0 +1,24 @@
+{
+  "schema": 0,
+  "id": "ruby_stairs",
+  "name": "Ruby Stairs",
+  "template": "stairs",
+  "textures": { "all": "texture.png" },
+  "hitbox": { "type": "template", "collision": true, "selection": true },
+  "mining": { "hardness": 2.0, "blast_resistance": 6.0, "tool": "pickaxe", "tier": "iron", "requires_tool": true },
+  "drops": { "type": "self" },
+  "sounds": { "preset": "stone" },
+  "light": 0,
+  "ticking": { "enabled": false },
+  "explosion": { "breakable": true, "drops": true },
+  "item": { "auto": true, "stack_size": 64 },
+  "recipes": [
+    {
+      "type": "shaped",
+      "pattern": ["R  ", "RR ", "RRR"],
+      "key": { "R": "example:ruby" },
+      "result_count": 4
+    }
+  ],
+  "behaviors": {}
+}

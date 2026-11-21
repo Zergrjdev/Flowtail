@@ -1,0 +1,10 @@
+{
+  "schema": 0,
+  "id": "ruby",
+  "name": "Ruby",
+  "template": "generic",
+  "texture": "texture.png",
+  "stack_size": 64,
+  "recipes": [],
+  "behaviors": {}
+}

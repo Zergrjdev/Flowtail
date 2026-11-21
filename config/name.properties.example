@@ -1,0 +1,75 @@
+# {name}.properties — DRAFT EXAMPLE (values shown = `balanced` profile defaults)
+# The app reads/writes this file; plain-text editing works too. Every optimisation has its own key.
+# Risk classes: R0 identical | R1 tiny risk | R2 small deviations | R3 big deviations.
+
+# ---------- Profile ----------
+parity-profile=balanced            # vanilla | balanced | performance | super-speed | custom
+super-speed-confirm=false          # must be true to use parity-profile=super-speed
+
+# ---------- Hardware (written by the app's hardware menu) ----------
+hardware.ram-mb=auto
+hardware.cpu-threads=auto
+hardware.upload-mbps=auto          # home hosting: used for the capacity estimate
+hardware.expected-max-players=auto
+hardware.gc=auto                   # auto | zgc | g1 | shenandoah
+threading.mode=auto                # auto | offload | regionised (experimental, later)
+threading.worker-threads=auto
+
+# ---------- World ----------
+world.format=fast                  # fast | vanilla   (lossless converter included)
+worldgen.parity=exact              # always exact (hard invariant; kept as a read-only safety key)
+
+# ---------- Network / bandwidth (R0 unless noted) ----------
+opt.chunk.packet-cache=true
+opt.net.packet-batching=true
+opt.net.offthread-encode=true
+opt.tracker.spatial-index=true
+opt.chunk.send-rate-limit=auto
+
+# ---------- Tick tails / IO (R0) ----------
+opt.io.async=true
+opt.io.batched-writes=true
+opt.autosave.spread=true
+
+# ---------- Entities / blocks ----------
+opt.hopper.event-driven=true            # R1
+opt.item-merge.radius=vanilla           # R1  vanilla | larger
+opt.redstone.algorithm=fast             # R1/R2  vanilla | fast
+opt.mob.cramming=vanilla                # R1/R2  vanilla | optimised | simplified
+opt.mob.activation-ranges=conservative  # R2  off | conservative | on | aggressive
+opt.mob.ai-throttle=off                 # R2  off | on | aggressive
+opt.view-distance.dynamic=true          # R2  only when overloaded
+opt.light.deferred=false                # R2
+opt.random-tick.budget=false            # R3
+opt.entity.far-tick-skip=false          # R3
+opt.physics.simplified=false            # R3
+
+# ---------- Custom content ----------
+content.note-block.vanilla=disabled        # note-block states are reserved as custom block carriers
+content.virtual-entities.packet-only=true    # R0 core design
+content.virtual-entities.max-per-player=auto
+content.virtual-entities.view-range-scale=1.0
+content.block.ticking.max-per-tick=auto
+content.client-fallback=vanilla-lookalike    # vanilla-lookalike | kick
+content.unknown-blocks=preserve              # preserve | placeholder
+
+# ---------- Resource pack ----------
+pack.host.enabled=true
+pack.host.port=8080
+pack.host.public-url=auto
+pack.required=true
+pack.decline-action=kick                    # kick | limbo-lag
+pack.per-world=true
+pack.merge=build                    # auto | build | manual   (pending Q5)
+pack.enforce.verification-probe=false   # opt-in, privacy implications (pending Q15)
+
+# ---------- Bedrock / Geyser (Phase 7) ----------
+bedrock.enabled=false
+bedrock.manage-geyser=true
+bedrock.floodgate=true
+bedrock.auto-publish=true
+
+# ---------- Logging / console ----------
+log.structured=true
+log.console.default-filter=all      # all | errors | warnings | errors+warnings
+log.profiler.per-plugin=true

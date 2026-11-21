@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+java_runtime=$(sed -nE 's/^java_runtime[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' versions.toml | head -1)
+if [ -n "$java_runtime" ] && [ -x ".tools/jdk-$java_runtime/bin/java" ]; then
+  export JAVA_HOME="$(pwd)/.tools/jdk-$java_runtime"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+exec python3 parity/flowtail.py "$@"

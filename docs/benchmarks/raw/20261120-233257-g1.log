@@ -1,0 +1,96 @@
+Downloading mojang_26.3.jar
+Applying patches
+Starting org.bukkit.craftbukkit.Main
+2026-11-20T12:33:00.630412650Z ServerMain WARN Advanced terminal features are not available in this environment
+[23:33:00 INFO]: [bootstrap] Running Java 25 (OpenJDK 64-Bit Server VM 25.0.5.0.3; Arch Linux null) on Linux 7.3.4-1-cachyos (amd64)
+[23:33:00 INFO]: [bootstrap] Loading Paper 26.3-DEV-HEAD@1eda666 (1970-01-01T00:00:00Z) for Minecraft 26.3
+[23:33:00 INFO]: [PluginInitializerManager] Initializing plugins...
+[23:33:00 INFO]: [PluginInitializerManager] Initialized 0 plugins
+[23:33:02 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Initialising converters for DataConverter...
+[23:33:02 INFO]: [com.destroystokyo.paper.profile.PaperServicesDiscoveryService] Environment: Environment[discoveryUrl=https://discovery.minecraftservices.com/minecraft/client, name=PROD]
+[23:33:02 INFO]: [ca.spottedleaf.dataconverter.minecraft.datatypes.MCTypeRegistry] Finished initialising converters for DataConverter in 163.6ms
+[23:33:02 INFO]: Found new data pack paper, loading it automatically
+[23:33:02 INFO]: No existing world data, creating new world
+[23:33:03 INFO]: Loaded 1866 advancements
+[23:33:03 INFO]: Starting minecraft server version 26.3
+[23:33:03 INFO]: Loading properties
+[23:33:03 INFO]: This server is running Paper version 26.3-DEV-HEAD@1eda666 (1970-01-01T00:00:00Z) (Implementing API version 26.3.local-SNAPSHOT)
+[23:33:03 INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[23:33:03 INFO]: Server Ping Player Sample Count: 12
+[23:33:03 INFO]: Using 4 threads for Netty based IO
+[23:33:03 INFO]: [MoonriseCommon] Paper is using 4 worker threads, 1 I/O threads
+[23:33:03 INFO]: [ca.spottedleaf.moonrise.common.util.FMA] FMA supported: true for Linux platform with feature flag: flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good amd_lbr_v2 nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpuid_fault cpb cat_l3 cdp_l3 hw_pstate ssbd mba perfmon_v2 ibrs ibpb stibp ibrs_enhanced vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk avx512_bf16 clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic vgif x2avic v_spec_ctrl vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid overflow_recov succor smca fsrm flush_l1d amd_lbr_pmc_freeze
+[23:33:03 INFO]: Default game type: SURVIVAL
+[23:33:03 INFO]: Generating keypair
+[23:33:03 INFO]: Starting Minecraft server on *:25565
+[23:33:03 INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+[23:33:03 INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
+[23:33:03 INFO]: Preparing level "world"
+[23:33:03 INFO]: Selecting spawn point for level 'minecraft:overworld'...
+[23:33:04 INFO]: Selecting spawn point for level 'minecraft:the_nether'...
+[23:33:04 INFO]: Selecting spawn point for level 'minecraft:the_end'...
+[23:33:04 INFO]: Loading 0 persistent chunks for level 'minecraft:overworld'...
+[23:33:04 INFO]: Preparing spawn area: 100%
+[23:33:04 INFO]: Prepared spawn area in 1084 ms
+[23:33:04 INFO]: Loading 0 persistent chunks for level 'minecraft:the_nether'...
+[23:33:04 INFO]: Preparing spawn area: 100%
+[23:33:04 INFO]: Prepared spawn area in 249 ms
+[23:33:04 INFO]: Loading 0 persistent chunks for level 'minecraft:the_end'...
+[23:33:04 INFO]: Preparing spawn area: 100%
+[23:33:04 INFO]: Prepared spawn area in 76 ms
+[23:33:04 INFO]: Done preparing level "world" (1.199s)
+[23:33:04 INFO]: [spark] Starting background profiler...
+[23:33:04 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[23:33:04 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[23:33:04 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[23:33:04 INFO]: Running delayed init tasks
+[23:33:04 INFO]: Done (4.314s)! For help, type "help"
+[23:33:04 INFO]: *************************************************************************************
+[23:33:04 INFO]: This is the first time you're starting this server.
+[23:33:04 INFO]: It's recommended you read our 'Getting Started' documentation for guidance.
+[23:33:04 INFO]: View this and more helpful information here: https://docs.papermc.io/paper/next-steps
+[23:33:04 INFO]: *************************************************************************************
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m TPS from last 5s, 10s, 1m, 5m, 15m:[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m  [38;2;85;255;85m*20.0[38;2;170;170;170m, [38;2;85;255;85m*20.0[38;2;170;170;170m, [38;2;85;255;85m*20.0[38;2;170;170;170m, [38;2;85;255;85m*20.0[38;2;170;170;170m, [38;2;85;255;85m*20.0[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m [0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m Tick durations (min/med/95%ile/max ms) from last 10s, 1m:[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m  [38;2;85;255;85m0.0[38;2;170;170;170m/[38;2;85;255;85m0.0[38;2;170;170;170m/[38;2;85;255;85m0.1[38;2;170;170;170m/[38;2;85;255;85m3.8[38;2;170;170;170m;  [38;2;85;255;85m0.0[38;2;170;170;170m/[38;2;85;255;85m0.1[38;2;170;170;170m/[38;2;85;255;85m0.2[38;2;170;170;170m/[38;2;85;255;85m4.6[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m [0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m CPU usage from last 10s, 1m, 15m:[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m  [38;2;85;255;85m0%[38;2;170;170;170m, [38;2;85;255;85m0%[38;2;170;170;170m, [38;2;85;255;85m0%[38;2;85;85;85m  (system)[0m
+[23:34:04 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m  [38;2;85;255;85m0%[38;2;170;170;170m, [38;2;85;255;85m0%[38;2;170;170;170m, [38;2;85;255;85m0%[38;2;85;85;85m  (process)[0m
+[23:34:07 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m Generating server health report...[0m
+[23:34:11 INFO]: [38;2;170;170;170m[38;2;85;85;85m[[1m[38;2;255;255;85m⚡[0m[38;2;85;85;85m][38;2;170;170;170m [38;2;255;170;0mHealth Report:[0m
+[23:34:11 INFO]: [38;2;170;170;170mhttps://spark.lucko.me/ZEW4FKjgkB[0m
+[23:34:12 INFO]: System chat: Stopping the server
+[23:34:12 INFO]: Stopping server
+[23:34:12 INFO]: Saving players
+[23:34:12 INFO]: Saving worlds
+[23:34:12 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:overworld'
+[23:34:12 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:overworld'
+[23:34:12 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:overworld'
+[23:34:12 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:overworld' in 0.00s
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:overworld'
+[23:34:12 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:overworld'
+[23:34:12 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_nether'
+[23:34:12 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_nether'
+[23:34:12 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_nether'
+[23:34:12 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_nether' in 0.00s
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_nether'
+[23:34:12 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_nether'
+[23:34:12 INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'minecraft:the_end'
+[23:34:12 INFO]: [ChunkHolderManager] Halted chunk system for world 'minecraft:the_end'
+[23:34:12 INFO]: [ChunkHolderManager] Saving all chunkholders for world 'minecraft:the_end'
+[23:34:12 INFO]: [ChunkHolderManager] Saved 0 block chunks, 0 entity chunks, 0 poi chunks in world 'minecraft:the_end' in 0.00s
+[23:34:12 INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'minecraft:the_end'
+[23:34:12 INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'minecraft:the_end'
+[23:34:12 INFO]: Waiting for all RegionFile I/O tasks to complete...
+[23:34:12 INFO]: All RegionFile I/O tasks to complete
+[23:34:12 INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
+[23:34:12 INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...
+=== SUMMARY 20261120-233257 ===
+gc=g1 heap=4G idle=60s startup=Done (4.314s) rss_mb=2795
+cpu= AMD Ryzen 7 7800X3D 8-Core Processor cores=16 java=openjdk version "25.0.5.0.3" 2026-10-24

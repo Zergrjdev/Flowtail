@@ -1,0 +1,30 @@
+# 14 — Phase 2: server-side tasks for Codex
+
+Read first: `AGENTS.md`, `docs/13_PHASE2_DESIGN.md`, `docs/04_CUSTOM_CONTENT.md`. The data side is done (compiler, pack generator). Everything below must be **compiled and run against Paper 26.3 on Java 25**, so it is yours. Work top to bottom; tick roadmap items only when the check passes; log each session in `PROGRESS.md`.
+
+**Do not change** the invariants in `docs/13 §2` or the file formats without logging an ADR. If Paper's real API differs from `docs/13 §4` (it was read from source, never compiled), fix the doc and say so in the log.
+
+## Step 0 — verify the data side on the real server (30 min)
+1. `bash scripts/run-upstream.sh` once (EULA already accepted) so `run/upstream/cache/mojang_26.3.jar` exists. `bash scripts/gen-reports.sh` → `build/reports/reports/blocks.json`.
+2. `python3 scripts/mc-pack-format.py run/upstream/cache/mojang_26.3.jar` → if the resource pack format is not 97, change `resource_pack_format` in `versions.toml` and drop the UNVERIFIED comment.
+3. `bash scripts/build-content.sh` → expect no `W-CARRIER-UNVERIFIED`. Check `blocks.json` has `minecraft:note_block` with the same properties the fallback list assumes; if not, fix `ftc/carriers.py` fallback.
+4. Put `build/content/pack/pack.zip` into a client's `resourcepacks/`, join any world, and check: `/give` is not needed, just place a note block with the right state via `/setblock ~ ~ ~ minecraft:note_block[instrument=harp,note=0,powered=true]` → should show the Rock texture; the item model `example:ruby` via `/give @s paper[item_model="example:ruby"]` → ruby icon. Record results in `docs/13 §1` (replace "Not verified").
+
+## Tasks (IDs from ROADMAP.md)
+* **P2-01 bootstrap + registry load.** New module `content-engine/` (Gradle, Java 25, depends on Paper API) shipped inside the FlowTail jar. In `PluginBootstrap#bootstrap`, read `content-state/registry.json`; fail loudly (structured log, plugin id + content id) on bad data; late registration is an error. Done when: server logs `N blocks, N items, N paintings registered` from the example plugin.
+* **P2-07 (server part).** (a) Java port of `compiler/ftc/pack.py` — add `compiler/tests/golden/` vectors first, then match them. (b) `com.sun.net.httpserver` host on `pack.host.port`, URL from `pack.host.public-url` (auto = detect LAN IP and print it), SHA-1 check at startup. (c) Send the pack in the configuration phase if Paper allows (`AsyncPlayerConnectionConfigureEvent`) and hold the player until `SUCCESSFULLY_LOADED`; otherwise fall back to sending on join and freezing the player. (d) `pack.decline-action`: `kick` or `limbo-lag` (message "this server is unplayable without the pack", then a cheap limbo with artificial latency that costs less than a normal player; see docs/12 Q15 and ADR-016). Done when: vanilla client joins, gets the pack, decline paths work, `pack.required=false` skips the hold.
+* **P2-02 + P2-03 items.** `ItemPrototypes`: id `example:ruby` → base item + components (`item_model`, `item_name`, `max_stack_size`, later stats). 2A: write full components into the stack at creation and store `flowtail:id` in its PDC. Keep the `expand(stack)` interface so 2B (id only, expand on send via a packet hook, ADR-005) can replace it. `/give @s example:ruby [count]` with tab completion, and a creative tab/search entry if the API allows. Done when: ruby shows its icon, survives drop/pickup/chest/relog, and a stack the client sends back (creative) is recognised.
+* **P2-04 + P2-05 blocks.** Per-chunk map `x,y,z → namespaced id` in the chunk PDC (invariant 1). Place: item with a block id → set the carrier `BlockData` from `registry.json`, record id. Break: tracked position → remove record, drop the block's item (or its drops config), cancel vanilla drop. Cancel `BlockPhysicsEvent`/`NotePlayEvent` for tracked positions and block vanilla note-block placement/tuning when `content.note-block.vanilla=disabled` (add this key to `parity/flowtail.py`, default `disabled`). Unknown ids (not in registry): keep the record, show the placeholder carrier `minecraft:barrier`-like model via the retired mechanism, never delete. Done when: acceptance steps 3–4 of docs/13 §6.
+* **P2-06 packet-only visuals.** Out of scope for the cube MVP; design only. Write `docs/13 §7` with a plan for display + interaction entities bound to chunk watch/unwatch (reserved entity id range, no level entity list). Implement in Phase 3 (P3-12).
+* **P2-09 example plugin works.** `examples/example-plugin` (Rock cube + Ruby item + Sunset painting data) loads end to end. RubyStairs and RubySword visuals build; stairs are skipped until P3-01 (known warning). Done when: acceptance in docs/13 §6 passes.
+* **P2-10 debug tools v0.** `/content list` (plugins, blocks, items, paintings, retired slots), `/content missing`, `/content inspect` (look at a block → id, carrier state, chunk record), `/give`. Done when each prints plain-English output and appears in structured logs with source `content-engine`.
+
+## Rules for this phase
+* Keep Paper-API-level code in `content-engine/`; only add a Paper patch (`server/patches/`) when the API truly cannot do it, and say why in the log.
+* Every error from plugin content names plugin id + content id + file (structured log, `docs/13`).
+* Add tests where they can run without a server (golden vectors, registry parsing); run `python3 -m unittest discover -s compiler/tests` before every commit.
+* Benchmarks: run `tools/bench` before/after with the example plugin loaded and an empty world; custom content must cost ~0 when no custom block is in view.
+* Do not start Phase 3 items (shapes, states, mining, sounds, Bedrock).
+
+## Paste this to Codex
+> Read AGENTS.md, then docs/13_PHASE2_DESIGN.md and docs/14_PHASE2_CODEX_TASKS.md. Do "Step 0" first and log the results in PROGRESS.md. Then implement Phase 2 server-side tasks in the order listed, verifying each on the real server with a vanilla client or the bot swarm, ticking ROADMAP.md only when verified. The compiler and pack generator in compiler/ already work and have tests; do not rewrite them, but fix them if Step 0 shows the real server data differs.
