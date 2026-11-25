@@ -1,0 +1,25 @@
+{
+  "schema": 0,
+  "id": "weave_plate",
+  "name": "Woven Plate",
+  "template": "pressure_plate",
+  "textures": {
+    "all": "texture.png"
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "stone"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  },
+  "mining": {
+    "hardness": 0.5,
+    "tool": "pickaxe",
+    "tier": "none",
+    "requires_tool": false
+  }
+}

@@ -68,7 +68,7 @@ final class ItemCommandListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String[] args = event.getMessage().substring(1).trim().split("\\s+");
-        if (args.length < 3 || !args[0].equalsIgnoreCase("give") || !registry.items().containsKey(args[2])) return;
+        if (args.length < 3 || !args[0].equalsIgnoreCase("give") || !prototypes.has(args[2])) return;
         event.setCancelled(true);
         Player sender = event.getPlayer();
         if (!sender.hasPermission("flowtail.give")) {
@@ -91,13 +91,16 @@ final class ItemCommandListener implements Listener {
                 sender.sendMessage(Component.text("Count must be a whole number.")); return;
             }
         }
-        final ItemStack stack;
-        try { stack = prototypes.create(args[2], count); }
-        catch (IllegalArgumentException error) {
+        final List<ItemStack> stacks = new ArrayList<>();
+        try {
+            for (int size : StackSplit.split(count, prototypes.maxStackSize(args[2]))) stacks.add(prototypes.create(args[2], size));
+        } catch (IllegalArgumentException error) {
             sender.sendMessage(Component.text(error.getMessage())); return;
         }
-        Map<Integer, ItemStack> leftover = target.getInventory().addItem(stack);
-        leftover.values().forEach(item -> target.getWorld().dropItemNaturally(target.getLocation(), item));
+        for (ItemStack stack : stacks) {
+            Map<Integer, ItemStack> leftover = target.getInventory().addItem(stack);
+            leftover.values().forEach(item -> target.getWorld().dropItemNaturally(target.getLocation(), item));
+        }
         sender.sendMessage(Component.text("Gave " + count + " " + args[2] + " to " + target.getName() + "."));
         plugin.getLogger().info("Gave custom item plugin_id=" + args[2].substring(0, args[2].indexOf(':'))
                 + " content_id=" + args[2] + " count=" + count + " player=" + target.getUniqueId());
@@ -128,7 +131,7 @@ final class ItemCommandListener implements Listener {
         if (args.length <= 2) {
             candidates.add("@s");
         } else if (args.length == 3) {
-            candidates.addAll(registry.items().keySet());
+            candidates.addAll(prototypes.ids());
         } else if (args.length == 4) {
             candidates.add("1"); candidates.add("16"); candidates.add("64");
         }

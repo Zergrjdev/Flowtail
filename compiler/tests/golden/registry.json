@@ -2,15 +2,6 @@
   "blocks": [
     {
       "behaviors": {},
-      "carrier": {
-        "block": "minecraft:note_block",
-        "pool": "cube.note_block",
-        "state": {
-          "instrument": "harp",
-          "note": "0",
-          "powered": "true"
-        }
-      },
       "drops": {
         "type": "self"
       },
@@ -23,27 +14,27 @@
         "selection": true,
         "type": "template"
       },
-      "id": "example:rock",
+      "id": "example:bait_crate",
       "item": {
         "auto": true,
         "stack_size": 64
       },
       "light": 0,
       "mining": {
-        "blast_resistance": 6.0,
-        "hardness": 1.5,
-        "requires_tool": true,
-        "tier": "stone",
-        "tool": "pickaxe"
+        "blast_resistance": 3.0,
+        "hardness": 2.0,
+        "requires_tool": false,
+        "tier": "wood",
+        "tool": "axe"
       },
-      "model": "example:block/rock",
-      "name": "Rock",
+      "model": "example:block/bait_crate",
+      "name": "Bait Crate",
       "particles": {
         "break": "auto"
       },
       "recipes": [],
       "sounds": {
-        "preset": "stone"
+        "preset": "wood"
       },
       "states": {},
       "template": "cube",
@@ -57,46 +48,32 @@
     {
       "base": "minecraft:paper",
       "behaviors": {},
-      "id": "example:ruby",
-      "item_model": "example:ruby",
-      "name": "Ruby",
+      "id": "example:bait",
+      "item_model": "example:bait",
+      "name": "Bait",
       "recipes": [],
       "stack_size": 64,
       "template": "generic"
     },
     {
-      "base": "minecraft:iron_sword",
-      "behaviors": {
-        "on_hit": "example:ruby_burn"
-      },
-      "id": "example:ruby_sword",
-      "item_model": "example:ruby_sword",
-      "name": "Ruby Sword",
-      "recipes": [
-        {
-          "key": {
-            "R": "example:ruby",
-            "S": "minecraft:stick"
-          },
-          "pattern": [
-            " R ",
-            " R ",
-            " S "
-          ],
-          "type": "shaped"
-        }
-      ],
+      "base": "minecraft:fishing_rod",
+      "behaviors": {},
+      "id": "example:fishing_rod",
+      "item_model": "example:fishing_rod",
+      "name": "River Fishing Rod",
+      "recipes": [],
+      "stack_size": 1,
+      "template": "generic"
+    },
+    {
+      "base": "minecraft:paper",
+      "behaviors": {},
+      "id": "example:river_fish",
+      "item_model": "example:river_fish",
+      "name": "River Fish",
+      "recipes": [],
       "stack_size": 64,
-      "stats": {
-        "attack_damage": 7.0,
-        "attack_speed": 1.6,
-        "durability": 1800,
-        "enchantability": 18,
-        "repair_with": [
-          "example:ruby"
-        ]
-      },
-      "template": "sword"
+      "template": "generic"
     }
   ],
   "pack_format": [
@@ -105,14 +82,14 @@
   ],
   "paintings": [
     {
-      "asset_id": "example:sunset",
-      "author": "Example",
+      "asset_id": "example:reedbank",
+      "author": "River Fishing",
       "height": 1,
-      "id": "example:sunset",
+      "id": "example:reedbank",
       "item": {
         "auto": true
       },
-      "name": "Sunset",
+      "name": "Reedbank",
       "recipes": [
         {
           "ingredients": [
@@ -131,10 +108,12 @@
       "has_code": false,
       "has_datapack": false,
       "id": "example",
-      "name": "Example Plugin",
+      "name": "River Fishing",
       "version": "0.1.0"
     }
   ],
-  "retired_blocks": [],
+  "retired_blocks": [
+    "example:rock"
+  ],
   "schema": 0
 }

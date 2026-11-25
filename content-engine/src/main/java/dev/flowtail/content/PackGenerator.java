@@ -28,11 +28,6 @@ import java.util.zip.ZipOutputStream;
 /** Java server-side port of compiler/ftc/pack.py. ZIP bytes may differ; entry bytes are golden-tested. */
 public final class PackGenerator {
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-    private static final String POOL = "cube.note_block";
-    private static final String CARRIER = "minecraft:note_block";
-    private static final String DEFAULT = "instrument=harp,note=0,powered=false";
-    private static final Map<String, List<String>> NOTE_PROPERTIES = noteProperties();
-
     private PackGenerator() {}
 
     public record Result(Path zip, Path registry, Path allocations, String sha1, long size, int entries) {}
@@ -63,14 +58,18 @@ public final class PackGenerator {
         JsonObject allocations = Files.exists(allocationPath)
                 ? readJson(allocationPath).getAsJsonObject() : initialAllocations();
         if (intValue(allocations, "schema") != 0) throw new IllegalArgumentException("unsupported allocations schema");
-        JsonObject pool = allocations.getAsJsonObject("pools").getAsJsonObject(POOL);
-        JsonObject slots = pool.getAsJsonObject("slots");
-        List<Map<String, String>> available = poolSlots();
-        Set<String> used = new HashSet<>();
-        for (Map.Entry<String, JsonElement> entry : slots.entrySet()) {
-            used.add(stateKey(entry.getValue().getAsJsonObject().getAsJsonObject("state")));
+        JsonObject slots = new JsonObject();
+        if (allocations.has("pools") && allocations.getAsJsonObject("pools").has("cube.note_block")) {
+            slots = allocations.getAsJsonObject("pools").getAsJsonObject("cube.note_block").getAsJsonObject("slots");
         }
-        available.removeIf(state -> used.contains(stateKey(state)));
+        JsonObject knownBlocks = allocations.has("blocks") ? allocations.getAsJsonObject("blocks") : new JsonObject();
+        allocations.add("blocks", knownBlocks);
+        for (Map.Entry<String, JsonElement> legacy : slots.entrySet()) {
+            if (!knownBlocks.has(legacy.getKey())) {
+                knownBlocks.addProperty(legacy.getKey(), !legacy.getValue().getAsJsonObject().get("retired").getAsBoolean());
+            }
+        }
+        allocations.remove("pools"); // migrate legacy carrier slots to plain retained IDs
 
         JsonObject registry = new JsonObject();
         registry.addProperty("schema", 0);
@@ -92,27 +91,17 @@ public final class PackGenerator {
                 JsonObject block = element.getAsJsonObject().deepCopy();
                 String id = string(block, "id");
                 liveBlocks.add(id);
-                if (!slots.has(id)) {
-                    if (available.isEmpty()) throw new IllegalStateException("no free carrier states remain for " + id);
-                    JsonObject slot = new JsonObject();
-                    slot.add("state", toJsonObject(available.removeFirst()));
-                    slot.addProperty("retired", false);
-                    slots.add(id, slot);
-                } else {
-                    slots.getAsJsonObject(id).addProperty("retired", false);
-                }
-                JsonObject carrier = new JsonObject();
-                carrier.addProperty("pool", POOL); carrier.addProperty("block", CARRIER);
-                carrier.add("state", slots.getAsJsonObject(id).getAsJsonObject("state").deepCopy());
-                block.add("carrier", carrier); blockEntries.add(block);
+                knownBlocks.addProperty(id, true);
+                if (slots.has(id)) slots.getAsJsonObject(id).addProperty("retired", false);
+                blockEntries.add(block);
             }
         }
         List<String> retired = new ArrayList<>();
-        for (Map.Entry<String, JsonElement> entry : slots.entrySet()) {
-            if (!liveBlocks.contains(entry.getKey())) {
-                entry.getValue().getAsJsonObject().addProperty("retired", true);
-                retired.add(entry.getKey());
-            }
+        for (Map.Entry<String, JsonElement> entry : knownBlocks.entrySet()) {
+            if (!liveBlocks.contains(entry.getKey())) knownBlocks.addProperty(entry.getKey(), false);
+        }
+        for (Map.Entry<String, JsonElement> entry : knownBlocks.entrySet()) {
+            if (!entry.getValue().getAsBoolean()) retired.add(entry.getKey());
         }
         retired.sort(String::compareTo);
         JsonArray retiredArray = new JsonArray(); retired.forEach(retiredArray::add);
@@ -127,6 +116,11 @@ public final class PackGenerator {
             for (Map.Entry<String, byte[]> entry : plugin.files.entrySet()) {
                 if (!entry.getKey().startsWith("pack/")) continue;
                 String name = entry.getKey().substring("pack/".length());
+                if (name.startsWith("assets/minecraft/blockstates/")
+                        || name.startsWith("assets/minecraft/models/block/")
+                        || name.startsWith("assets/minecraft/textures/block/")) {
+                    throw new IllegalArgumentException("plugin " + pluginId + " may not override vanilla block assets: " + name);
+                }
                 byte[] previous = merged.get(name);
                 if (previous == null) {
                     merged.put(name, entry.getValue()); fileOwners.put(name, pluginId);
@@ -135,20 +129,7 @@ public final class PackGenerator {
                 }
             }
         }
-        Map<String, String> byState = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : slots.entrySet()) {
-            byState.put(stateKey(entry.getValue().getAsJsonObject().getAsJsonObject("state")), entry.getKey());
-        }
-        JsonObject variants = new JsonObject();
-        for (Map<String, String> state : allStates()) {
-            String key = stateKey(state), blockId = byState.get(key);
-            String model = blockId == null ? "minecraft:block/note_block"
-                    : liveBlocks.contains(blockId) ? modelFor(registry, blockId) : "minecraft:block/barrier";
-            JsonObject modelObject = new JsonObject(); modelObject.addProperty("model", model);
-            variants.add(key, modelObject);
-        }
-        JsonObject blockstate = new JsonObject(); blockstate.add("variants", variants);
-        merged.put("assets/minecraft/blockstates/note_block.json", jsonBytes(blockstate));
+        // Custom blocks use item models on display entities. Never override vanilla block states or models.
         JsonObject pack = new JsonObject(); pack.addProperty("description", "FlowTail content pack");
         JsonArray min = new JsonArray(); min.add(packMajor); min.add(packMinor);
         JsonArray max = new JsonArray(); max.add(packMajor); max.add(packMinor);
@@ -210,51 +191,8 @@ public final class PackGenerator {
     }
 
     private static JsonObject initialAllocations() {
-        JsonObject slots = new JsonObject(); JsonObject pool = new JsonObject();
-        pool.addProperty("block", CARRIER); pool.add("slots", slots);
-        JsonObject pools = new JsonObject(); pools.add(POOL, pool);
-        JsonObject root = new JsonObject(); root.addProperty("schema", 0); root.add("pools", pools);
+        JsonObject root = new JsonObject(); root.addProperty("schema", 0); root.add("blocks", new JsonObject());
         return root;
-    }
-
-    private static List<Map<String, String>> poolSlots() {
-        List<Map<String, String>> states = allStates();
-        states.removeIf(state -> stateKey(state).equals(DEFAULT));
-        return states;
-    }
-
-    private static List<Map<String, String>> allStates() {
-        List<Map<String, String>> result = new ArrayList<>();
-        for (String instrument : NOTE_PROPERTIES.get("instrument"))
-            for (String note : NOTE_PROPERTIES.get("note"))
-                for (String powered : NOTE_PROPERTIES.get("powered")) {
-                    Map<String, String> state = new TreeMap<>();
-                    state.put("instrument", instrument); state.put("note", note); state.put("powered", powered);
-                    result.add(state);
-                }
-        return result;
-    }
-
-    private static Map<String, List<String>> noteProperties() {
-        Map<String, List<String>> props = new LinkedHashMap<>();
-        props.put("instrument", List.of("harp", "basedrum", "snare", "hat", "bass", "flute", "bell", "guitar",
-                "chime", "xylophone", "iron_xylophone", "cow_bell", "didgeridoo", "bit", "banjo", "pling",
-                "trumpet", "trumpet_exposed", "trumpet_oxidized", "trumpet_weathered", "zombie", "skeleton",
-                "creeper", "dragon", "wither_skeleton", "piglin", "custom_head"));
-        List<String> notes = new ArrayList<>(); for (int i = 0; i < 25; i++) notes.add(Integer.toString(i));
-        props.put("note", notes); props.put("powered", List.of("true", "false"));
-        return Map.copyOf(props);
-    }
-
-    private static String stateKey(Map<String, String> state) {
-        return String.join(",", new TreeMap<>(state).entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue()).toList());
-    }
-
-    private static String stateKey(JsonObject state) {
-        Map<String, String> values = new TreeMap<>();
-        for (Map.Entry<String, JsonElement> entry : state.entrySet()) values.put(entry.getKey(), entry.getValue().getAsString());
-        return stateKey(values);
     }
 
     private static String modelFor(JsonObject registry, String id) {
@@ -268,9 +206,6 @@ public final class PackGenerator {
         for (JsonElement element : source) destination.add(element.deepCopy());
     }
 
-    private static JsonObject toJsonObject(Map<String, String> values) {
-        JsonObject object = new JsonObject(); new TreeMap<>(values).forEach(object::addProperty); return object;
-    }
 
     private static byte[] jsonBytes(JsonElement value) {
         return (JSON.toJson(sort(value)) + "\n").getBytes(StandardCharsets.UTF_8);

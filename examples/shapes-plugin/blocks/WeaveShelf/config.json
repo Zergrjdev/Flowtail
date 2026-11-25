@@ -1,0 +1,12 @@
+{
+  "schema": 0,
+  "id": "weave_shelf",
+  "name": "Woven Shelf",
+  "template": "shelf",
+  "textures": { "all": "texture.png" },
+  "sounds": { "preset": "wood" },
+  "item": { "auto": true, "stack_size": 64 },
+  "mining": { "hardness": 1.5, "tool": "axe", "requires_tool": false },
+  "drops": { "type": "self" },
+  "explosion": { "breakable": true, "drops": true }
+}

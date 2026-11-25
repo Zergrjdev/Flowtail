@@ -9,6 +9,7 @@ public final class ContentRuntime {
     private static volatile PackGenerator.Result pack;
     private static volatile ContentSettings settings;
     private static volatile ItemPrototypes itemPrototypes;
+    private static volatile dev.flowtail.content.api.FlowTailBlocks blocks;
 
     private ContentRuntime() {}
 
@@ -39,5 +40,14 @@ public final class ContentRuntime {
         ItemPrototypes prototypes = itemPrototypes;
         if (prototypes == null) throw new IllegalStateException("item prototypes were accessed before plugin enable");
         return prototypes;
+    }
+
+    static void installBlocks(dev.flowtail.content.api.FlowTailBlocks installed) { blocks = installed; }
+
+    /** Read access to FlowTail blocks in the world; available once the content plugin has enabled. */
+    public static dev.flowtail.content.api.FlowTailBlocks blocks() {
+        dev.flowtail.content.api.FlowTailBlocks current = blocks;
+        if (current == null) throw new IllegalStateException("block API was accessed before plugin enable");
+        return current;
     }
 }

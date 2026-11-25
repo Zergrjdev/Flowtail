@@ -8,7 +8,7 @@ deps=$(find "$gradle_home/caches/modules-2/files-2.1" -type f -name '*.jar' -pri
 [ -n "$deps" ] || { echo "Gradle dependency cache is empty. Build Paper first, then retry."; exit 1; }
 out=tools/bench/build/server-plugin
 rm -rf "$out"; mkdir -p "$out/classes"
-javac --release 25 -cp "$api:$deps" -d "$out/classes" tools/bench/plugin/src/main/java/dev/flowtail/benchplugin/BenchMetricsPlugin.java
+javac --release 25 -cp "$api:$deps" -d "$out/classes" tools/bench/plugin/src/main/java/dev/flowtail/benchplugin/*.java
 cp tools/bench/plugin/src/main/resources/plugin.yml "$out/classes/plugin.yml"
 jar --create --file build/FlowTailBench.jar -C "$out/classes" .
 echo "Built build/FlowTailBench.jar. Copy it to the isolated test server's plugins/ folder, then restart that server."

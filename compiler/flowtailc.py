@@ -3,7 +3,7 @@
 
   flowtailc check <plugin-dir>
   flowtailc build <plugin-dir> [-o build/plugins] [--jar plugin.jar]
-  flowtailc pack  <a.ftplugin> [b.ftplugin ...] [--state content-state] [-o build/pack] [--blocks-report blocks.json] [--pack-format N]
+  flowtailc pack  <a.ftplugin> [b.ftplugin ...] [--state content-state] [-o build/pack] [--pack-format N]
 """
 from __future__ import annotations
 import argparse
@@ -51,7 +51,7 @@ def main(argv=None) -> int:
     b = sub.add_parser("build"); b.add_argument("plugin_dir", type=Path); b.add_argument("-o", "--out", type=Path, default=Path("build/plugins")); b.add_argument("--jar", type=Path)
     p = sub.add_parser("pack"); p.add_argument("plugins", nargs="+", type=Path)
     p.add_argument("--state", type=Path, default=Path("content-state")); p.add_argument("-o", "--out", type=Path, default=Path("build/pack"))
-    p.add_argument("--blocks-report", type=Path); p.add_argument("--pack-format", type=parse_pack_format, default=default_pack_format())
+    p.add_argument("--pack-format", type=parse_pack_format, default=default_pack_format())
     p.add_argument("--on-conflict", choices=["first", "last", "error"], default="first")
     a = ap.parse_args(argv)
     rep = Report()
@@ -67,7 +67,7 @@ def main(argv=None) -> int:
         show(rep)
         if a.cmd == "check" and rep.ok: print("ok")
         return 0 if rep.ok else 1
-    info = build_pack(a.plugins, a.state, a.out, a.pack_format, rep, a.blocks_report, a.on_conflict)
+    info = build_pack(a.plugins, a.state, a.out, a.pack_format, rep, a.on_conflict)
     show(rep)
     if info:
         print(f"pack {a.out}/pack.zip sha1={info['sha1']} size={info['size']} entries={info['entries']} pack_format={info['pack_format']}")

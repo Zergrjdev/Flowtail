@@ -45,13 +45,23 @@ opt.entity.far-tick-skip=false          # R3
 opt.physics.simplified=false            # R3
 
 # ---------- Custom content ----------
-content.note-block.vanilla=disabled        # note-block states are reserved as custom block carriers
 content.virtual-entities.packet-only=true    # R0 core design
 content.virtual-entities.max-per-player=auto
 content.virtual-entities.view-range-scale=1.0
 content.block.ticking.max-per-tick=auto
 content.client-fallback=vanilla-lookalike    # vanilla-lookalike | kick
 content.unknown-blocks=preserve              # preserve | placeholder
+
+# ---------- FlowTail menu (pause-screen button + Custom Items) ----------
+# All menu.* keys need a server restart: the pause-screen button is a data-driven dialog fixed at startup.
+menu.enabled=true                          # false removes the button, the menu and /flowtail
+menu.label=FlowTail                        # button + menu title, max 32 characters, no '#'
+menu.color.from=8A2BE2                     # gradient start, RRGGBB without '#'  (purple)
+menu.color.to=E040FB                       # gradient end,   RRGGBB without '#'  (purple-pink)
+menu.bold=true
+menu.custom-items.label=Custom Items       # button inside the FlowTail menu
+menu.custom-items.title=Custom Items       # title of the chest menu
+menu.custom-items.access=creative          # creative | op | everyone
 
 # ---------- Resource pack ----------
 pack.host.enabled=true

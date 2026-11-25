@@ -24,6 +24,8 @@ val paperRuntimeLibraries = fileTree("../run/upstream/libraries") {
 dependencies {
     compileOnly(paperApi)
     compileOnly(paperRuntimeLibraries)
+    compileOnly("org.jetbrains:annotations:26.0.2")
+    testCompileOnly("org.jetbrains:annotations:26.0.2")
     testImplementation(paperRuntimeLibraries)
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")

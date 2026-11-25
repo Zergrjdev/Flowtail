@@ -1,0 +1,11 @@
+{
+  "schema": 0,
+  "id": "shapes",
+  "name": "Shape Samples",
+  "version": "0.1.0",
+  "authors": [
+    "you"
+  ],
+  "api": "0.x",
+  "description": "One block of every supported shape template (slab, stairs, trapdoor, button, pressure plate, carpet, plant, shelf) for in-game checks."
+}

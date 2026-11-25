@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs Mojang's data generator from the cached vanilla server jar and writes blocks.json (every block state, exactly).
-# The content compiler uses it for carrier pools (flowtailc pack --blocks-report build/reports/reports/blocks.json).
+# Research/audit helper only; the current compiler does not use vanilla block states as custom block carriers.
 # Needs: scripts/run-upstream.sh run once (it downloads the vanilla jar into run/upstream/cache/).
 set -euo pipefail
 cd "$(dirname "$0")/.."

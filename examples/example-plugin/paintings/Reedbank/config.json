@@ -1,0 +1,21 @@
+{
+  "schema": 0,
+  "id": "reedbank",
+  "name": "Reedbank",
+  "author": "River Fishing",
+  "texture": "texture.png",
+  "width": 2,
+  "height": 1,
+  "item": {
+    "auto": true
+  },
+  "recipes": [
+    {
+      "type": "shapeless",
+      "ingredients": [
+        "minecraft:painting",
+        "minecraft:orange_dye"
+      ]
+    }
+  ]
+}

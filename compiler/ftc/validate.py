@@ -13,8 +13,11 @@ PLUGIN_ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
 RES_RE = re.compile(r"^[a-z0-9_.-]+:[a-z0-9_./-]+$")
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$")
 
-BLOCK_TEMPLATES = ["cube", "slab", "stairs", "trapdoor", "shelf", "plant", "custom_model"]
-BUILDABLE_BLOCK_TEMPLATES = ["cube"]          # Phase 2; the rest arrive in P3-01 / P3-12
+BLOCK_TEMPLATES = ["cube", "slab", "stairs", "trapdoor", "button", "pressure_plate", "carpet", "shelf", "plant", "custom_model"]
+BUILDABLE_BLOCK_TEMPLATES = ["cube", "slab", "stairs", "trapdoor", "button", "pressure_plate", "carpet", "plant", "shelf"]   # P3-01
+TEMPLATE_LATER = {   # valid names that are not built yet, and the honest reason
+    "custom_model": "complex Blockbench/Java models arrive with roadmap item P3-12",
+}
 ITEM_TEMPLATES = ["generic", "sword", "axe", "pickaxe", "shovel", "hoe", "armor", "food", "potion", "custom"]
 FACES = ["all", "top", "bottom", "side", "north", "south", "east", "west", "particle"]
 TOOLS = ["none", "pickaxe", "axe", "shovel", "hoe", "sword", "shears"]
@@ -247,7 +250,7 @@ def validate_block(folder: Path, root: Path, ns: str, deps: set, local: set, ref
     t = _need(ctx, node, "template", str)
     template = t.value if t and _enum(ctx, t, BLOCK_TEMPLATES, "block template") else None
     if template and template not in BUILDABLE_BLOCK_TEMPLATES:
-        ctx.warn(t, "W-TEMPLATE-LATER", f"template \"{template}\" is valid but not built until Phase 3; this block is skipped for now", "Use \"cube\" for now.")
+        ctx.warn(t, "W-TEMPLATE-LATER", f"template \"{template}\" is valid but not built yet: {TEMPLATE_LATER.get(template, 'planned for Phase 3')}; this block is skipped for now", "Use one of: " + ", ".join(BUILDABLE_BLOCK_TEMPLATES) + ".")
     tex = _opt(ctx, node, "textures", dict)
     if template != "custom_model":
         if tex is None:
@@ -279,6 +282,8 @@ def validate_block(folder: Path, root: Path, ns: str, deps: set, local: set, ref
                 if len(vals) != 6 or not all(_is(x, float) and 0 <= x <= 16 for x in vals) or vals[0] >= vals[3] or vals[1] >= vals[4] or vals[2] >= vals[5]:
                     ctx.err(b, "E-HITBOX", "a box is [x1,y1,z1,x2,y2,z2] in 0-16 units with each first number smaller than its second", "Full block: [0,0,0,16,16,16].")
         for k in ("collision", "selection"): _opt(ctx, hb, k, bool)
+        if template in BUILDABLE_BLOCK_TEMPLATES and template != "cube" and ht and ht.value in ("box", "boxes"):
+            ctx.warn(hb, "W-HITBOX-IGNORED", f"the {template} template has a fixed shape, so \"hitbox\" {ht.value} is ignored", "Remove \"hitbox\", or use template \"cube\" with your own boxes once custom hitboxes are built.")
     st = _opt(ctx, node, "states", dict)
     if st:
         for name, spec in st.value.items():
@@ -286,8 +291,8 @@ def validate_block(folder: Path, root: Path, ns: str, deps: set, local: set, ref
                 ctx.err(st.key_lines[name], "E-ID", f"state name \"{name}\" is not valid", "Use lowercase letters, digits and _.")
             if not spec.is_obj or "type" not in spec.value or spec.value["type"].value not in ("boolean", "enum", "int", "direction"):
                 ctx.err(spec, "E-STATE", "a state is { \"type\": \"boolean\" | \"enum\" | \"int\" | \"direction\", ... }")
-        if template == "cube" and st.value:
-            ctx.warn(st, "W-STATES-LATER", "block states are stored but not built until roadmap item P3-03")
+        if template in BUILDABLE_BLOCK_TEMPLATES and st.value:
+            ctx.warn(st, "W-STATES-LATER", "custom block states are stored but not built until roadmap item P3-03" + ("" if template == "cube" else f" (the {template} template already has its own states, such as facing)"))
     mi = _opt(ctx, node, "mining", dict)
     if mi:
         h = _opt(ctx, mi, "hardness", float)
@@ -326,6 +331,9 @@ def validate_block(folder: Path, root: Path, ns: str, deps: set, local: set, ref
         _opt(ctx, it, "auto", bool)
         ss = _opt(ctx, it, "stack_size", int)
         if ss and not 1 <= ss.value <= 99: ctx.err(ss, "E-RANGE", "stack_size must be 1 to 99")
+        ib = _opt(ctx, it, "base", str)
+        if ib and not RES_RE.match(ib.value):
+            ctx.err(ib, "E-RESID", f"\"{ib.value}\" is not an item id", "Use namespace:name, for example minecraft:paper. Leave \"base\" out unless you want the block item to be made of a specific vanilla item.")
     _recipes(ctx, node, ns, deps, local, refs)
     _behaviors(ctx, node)
     return node

@@ -1,0 +1,11 @@
+{
+  "schema": 0,
+  "id": "fishing_rod",
+  "name": "River Fishing Rod",
+  "template": "generic",
+  "base": "minecraft:fishing_rod",
+  "texture": "texture.png",
+  "stack_size": 1,
+  "recipes": [],
+  "behaviors": {}
+}

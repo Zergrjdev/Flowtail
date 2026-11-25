@@ -1,0 +1,11 @@
+{
+  "schema": 0,
+  "id": "bait",
+  "name": "Bait",
+  "template": "generic",
+  "base": "minecraft:paper",
+  "texture": "texture.png",
+  "stack_size": 64,
+  "recipes": [],
+  "behaviors": {}
+}

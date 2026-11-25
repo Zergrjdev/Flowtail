@@ -1,0 +1,45 @@
+{
+  "schema": 0,
+  "id": "bait_crate",
+  "name": "Bait Crate",
+  "template": "cube",
+  "textures": {
+    "all": "texture.png"
+  },
+  "hitbox": {
+    "type": "template",
+    "collision": true,
+    "selection": true
+  },
+  "states": {},
+  "mining": {
+    "hardness": 2.0,
+    "blast_resistance": 3.0,
+    "tool": "axe",
+    "tier": "wood",
+    "requires_tool": false
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "wood"
+  },
+  "particles": {
+    "break": "auto"
+  },
+  "light": 0,
+  "ticking": {
+    "enabled": false
+  },
+  "explosion": {
+    "breakable": true,
+    "drops": true
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  },
+  "recipes": [],
+  "behaviors": {}
+}

@@ -1,0 +1,25 @@
+{
+  "schema": 0,
+  "id": "weave_hatch",
+  "name": "Woven Hatch",
+  "template": "trapdoor",
+  "textures": {
+    "all": "texture.png"
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "wood"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  },
+  "mining": {
+    "hardness": 1.5,
+    "tool": "axe",
+    "tier": "none",
+    "requires_tool": false
+  }
+}

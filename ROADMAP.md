@@ -28,22 +28,22 @@ Goal: our own jar, vanilla-compatible, with the settings/profile backbone.
 ## Phase 2 — Content engine MVP (the core)
 Goal: a vanilla client + generated pack sees a custom block and a custom item.
 - [x] P2-01 Bootstrap registration API (blocks, items, paintings) before registry freeze — verified on Paper 26.3; virtual block/item definitions and painting registry entry loaded
-- [ ] P2-02 (code present + hardened in Entry 0014; boot self-check added; real-server verification open) Item prototype system (`custom_data{id}` + expanded components; reverse mapping; creative inventory)
-- [ ] P2-03 (`/give` code present, unverified; no Paper creative-tab API found; visuals need a client) Custom item MVP (`item_model` + basic components) + `/give` + creative tab
-- [ ] P2-04 Extended block registry + persistence with **unknown-block preservation**
-- [ ] P2-05 State-carrier cube blocks (place/break/drops) with pack overrides
-- [ ] P2-06 Packet-only display + interaction visuals, lifecycle bound to chunk watch/unwatch; reserved id range
+- [ ] P2-02 (verified on Paper 26.3 in Entry 0015 except the creative-inventory round-trip; `/content selftest` (Entry 0027) now drives the real creative event server-side, tick after it passes in game) Item prototype system (`custom_data{id}` + expanded components; reverse mapping; creative inventory)
+- [ ] P2-03 (`/give` and ruby icon verified in Entry 0015; the "creative tab" clause is replaced by the FlowTail pause-screen menu + Custom Items chest menu per ADR-021, written in Entry 0016 and not yet compiled against Paper or run) Custom item MVP (`item_model` + basic components) + `/give` + FlowTail menu
+- [ ] P2-04 (code written in Entry 0015: chunk-PDC records, unknown ids preserved; not compiled against Paper or run) Extended block registry + persistence with **unknown-block preservation**
+- [ ] P2-05 (Entry 0026: half-size render fixed, interaction box realigned, self-healing projection, interim survival punch-to-break written; compiled against Paper API source only, not run) Add-only cube blocks: barrier collision/selection, item-display visual, interaction entity, placement/saved ids/unknown-id placeholder, with no vanilla blockstate/model overrides. Survival mining is P3-04.
+- [ ] P2-06 Folded into P2-05 by ADR-024; entity lifecycle is required for the cube MVP
 - [x] P2-07 (verified on Paper 26.3 with the bot swarm; join-phase fallback because Paper exposes no pause-until-status configuration hook) Java pack generator + HTTP host + pack delivery/hold and decline policies
 - [x] P2-08 (done 2026-11-21, Claude; output is `<id>.ftplugin`, plugin.jar embedded when supplied; 13 unit tests) Compiler CLI v0: `blocks/` + `items/` -> `plugin.jar` + pack contribution; schema validation with file:line errors
 - [ ] P2-09 (compiles and packs: verified; loading in-game open) `examples/example-plugin` compiles, loads, and works on a vanilla client
-- [ ] P2-10 Debug tools v0: `/give`, `/content list`, block inspector
+- [ ] P2-10 (`/content list [..|retired]|inspect|missing|selftest` — Entry 0027 makes all but `inspect` work from the console and adds `selftest`; not run) Debug tools v0: `/give`, `/content list`, block inspector
 **Acceptance:** example plugin: Rock block + Ruby item visible, placeable, breakable, saved/loaded; remove plugin -> world still loads safely.
 
 ## Phase 3 — Content engine complete
-- [ ] P3-01 Shape templates: slab, stairs, trapdoor, shelf, plant/sapling (vanilla-style placement logic)
-- [ ] P3-02 Carrier shape library + allocator + "sacrificed vanilla block" config (`tools/shape-scan`)
+- [ ] P3-01 (server self-test covers eight model templates and FlowTail-saved display states; client appearance remains unchecked. Add-only hitboxes now use barriers for every template. Full-cube collision remains; native trapdoor/button redstone, shelf inventory, waterlogging and support-loss behavior are not complete.) Shape templates: slab, stairs, trapdoor, shelf, plant/sapling (vanilla-style placement logic)
+- [ ] P3-02 (ADR-030 supersedes the vanilla carrier table/allocator design: implement a FlowTail-owned shape/collision runtime; never reserve or substitute a vanilla block. Q26's Shulker research spike found no server-authoritative partial box through the tested Bukkit API; awaiting Q27.) Shape collision library, placement and state logic for add-only templates
 - [ ] P3-03 Block states: rotation, arbitrary properties, connected textures
-- [ ] P3-04 Mining: hardness, tools, tiers, requires-tool, prediction handling, break animation
+- [ ] P3-04 (first slice in Entry 0029: timed survival mining, tiers, requires_tool; durability and modifiers still open, not run) Mining: hardness, tools, tiers, requires-tool, prediction handling, break animation (Entry 0031: blocks without a mining section default to hardness 1.5)
 - [ ] P3-05 Sounds, particles, light, explosion/breakable rules
 - [ ] P3-06 Block entity API: opt-in ticking, data, structured inventories API
 - [ ] P3-07 Painting variants end-to-end (registry sync, sizes, placement, obtain via recipe/loot)

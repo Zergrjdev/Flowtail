@@ -43,7 +43,14 @@ SETTINGS = [
     Setting("hardware.gc", "choice", "auto", "R0", True, "Java garbage collector", ("auto", "g1", "zgc", "shenandoah")),
     Setting("world.format", "choice", "vanilla", "R0", True, "World storage format", ("vanilla",)),
     Setting("worldgen.parity", "choice", "exact", "R0", True, "World generation parity (locked)", ("exact",)),
-    Setting("content.note-block.vanilla", "choice", "disabled", "R0", True, "Vanilla note blocks are reserved as custom block carriers", ("disabled", "enabled")),
+    Setting("menu.enabled", "bool", True, "R0", True, "Show the FlowTail button on the pause screen and enable the Custom Items menu"),
+    Setting("menu.label", "label", "FlowTail", "R0", True, "Text of the pause-screen button and the menu title (max 32 characters, no #)"),
+    Setting("menu.color.from", "hex-color", "8A2BE2", "R0", True, "First colour of the label gradient, 6 hex digits without # (default purple)"),
+    Setting("menu.color.to", "hex-color", "E040FB", "R0", True, "Last colour of the label gradient, 6 hex digits without # (default purple-pink)"),
+    Setting("menu.bold", "bool", True, "R0", True, "Show the label in bold"),
+    Setting("menu.custom-items.label", "label", "Custom Items", "R0", True, "Text of the Custom Items button inside the FlowTail menu"),
+    Setting("menu.custom-items.title", "label", "Custom Items", "R0", True, "Title of the Custom Items chest menu"),
+    Setting("menu.custom-items.access", "choice", "creative", "R0", True, "Who can open Custom Items: creative-mode players, operators, or everyone", ("creative", "op", "everyone")),
     Setting("pack.host.enabled", "bool", True, "R0", True, "Serve the generated resource pack from the built-in HTTP host"),
     Setting("pack.host.port", "int", 8080, "R0", True, "HTTP port used for resource pack delivery"),
     Setting("pack.host.public-url", "string", "auto", "R0", True, "Public resource pack URL or auto-detected LAN address"),
@@ -93,6 +100,14 @@ def parse_value(setting: Setting, raw: str) -> Any:
         return number
     if setting.kind == "choice":
         if value not in setting.choices: raise ValueError("expected one of: " + ", ".join(setting.choices))
+        return value
+    if setting.kind == "hex-color":
+        if not re.fullmatch(r"[0-9a-fA-F]{6}", value): raise ValueError("expected 6 hex digits like 8A2BE2 (no #, because # starts a comment)")
+        return value.upper()
+    if setting.kind == "label":
+        if not value: raise ValueError("must not be empty")
+        if len(value) > 32: raise ValueError("must be at most 32 characters")
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in value): raise ValueError("must not contain control characters")
         return value
     return value
 

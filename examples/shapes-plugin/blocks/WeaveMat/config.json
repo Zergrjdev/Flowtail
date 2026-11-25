@@ -1,0 +1,25 @@
+{
+  "schema": 0,
+  "id": "weave_mat",
+  "name": "Woven Mat",
+  "template": "carpet",
+  "textures": {
+    "all": "texture.png"
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "wool"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  },
+  "mining": {
+    "hardness": 0.1,
+    "tool": "none",
+    "tier": "none",
+    "requires_tool": false
+  }
+}

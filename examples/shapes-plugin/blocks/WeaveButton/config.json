@@ -1,0 +1,19 @@
+{
+  "schema": 0,
+  "id": "weave_button",
+  "name": "Woven Button",
+  "template": "button",
+  "textures": {
+    "all": "texture.png"
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "stone"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  }
+}

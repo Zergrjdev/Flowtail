@@ -1,0 +1,22 @@
+{
+  "schema": 0,
+  "id": "reed_tuft",
+  "name": "Reed Tuft",
+  "template": "plant",
+  "textures": {
+    "all": "texture.png"
+  },
+  "mining": {
+    "hardness": 0.0
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "grass"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  }
+}

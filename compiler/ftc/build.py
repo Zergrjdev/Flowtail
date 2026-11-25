@@ -7,6 +7,7 @@ from pathlib import Path
 
 from . import COMPILER_VERSION, SCHEMA
 from .diag import Report
+from . import shapes
 from .validate import (BUILDABLE_BLOCK_TEMPLATES, deps_of, validate_block, validate_item, validate_painting,
                        validate_plugin_json)
 
@@ -98,12 +99,30 @@ def build_plugin(src: Path, out_dir: Path, rep: Report, jar: Path | None = None)
             for face, fname in tex.items():
                 name = f"{cid}" if face == "all" else f"{cid}_{face}"
                 assets[f"assets/{ns}/textures/block/{name}.png"] = rel_tex(fname).read_bytes()
-            assets[f"assets/{ns}/models/block/{cid}.json"] = jdump(block_model(ns, cid, tex))
+            shaped = cfg["template"] in shapes.SHAPED_TEMPLATES
+            if shaped:
+                # One model + item definition per variant (P3-01, ADR-028); the block's own model is its icon variant.
+                table = shapes.variants()[cfg["template"]]
+                texmap = shapes.face_textures(ns, cid, tex)
+                plant_tex = texmap.get("north") or texmap.get("up") or texmap.get("particle")
+                models = {name: (shapes.plant_model(plant_tex) if cfg["template"] == "plant" else shapes.model_for(boxes, texmap))
+                          for name, boxes in table.items()}
+                for name, model in models.items():
+                    assets[f"assets/{ns}/models/block/{cid}/{name}.json"] = jdump(model)
+                    assets[f"assets/{ns}/items/{cid}/{name}.json"] = jdump({"model": {"type": "minecraft:model", "model": f"{ns}:block/{cid}/{name}"}})
+                assets[f"assets/{ns}/models/block/{cid}.json"] = jdump(models[shapes.ICON_VARIANT[cfg["template"]]])
+            else:
+                assets[f"assets/{ns}/models/block/{cid}.json"] = jdump(block_model(ns, cid, tex))
             auto = cfg.get("item", {}).get("auto", True)
-            if auto:
-                assets[f"assets/{ns}/items/{cid}.json"] = jdump({"model": {"type": "minecraft:model", "model": f"{ns}:block/{cid}"}})
-            entry = {k: v for k, v in cfg.items() if k not in ("schema", "textures", "model")}
-            entry.update({"id": f"{ns}:{cid}", "model": f"{ns}:block/{cid}", "item": {"auto": auto, "stack_size": cfg.get("item", {}).get("stack_size", 64)}})
+            # Always written: the block's display entity renders item_model "<ns>:<id>" even when the block has no
+            # giveable item (item.auto=false). Without it that display would have no model to resolve.
+            assets[f"assets/{ns}/items/{cid}.json"] = jdump({"model": {"type": "minecraft:model", "model": f"{ns}:block/{cid}"}})
+            entry = {k: v for k, v in cfg.items() if k not in ("schema", "textures", "model", "carrier_inherit")}
+            block_item = {"auto": auto, "stack_size": cfg.get("item", {}).get("stack_size", 64)}
+            if "base" in cfg.get("item", {}): block_item["base"] = cfg["item"]["base"]   # explicit only (ADR-022); absent = engine default
+            entry.update({"id": f"{ns}:{cid}", "model": f"{ns}:block/{cid}", "item": block_item})
+            if shaped:
+                entry["variants"] = sorted(shapes.variants()[cfg["template"]])   # the server checks its state->variant choice against this
             blocks.append(entry)
             assets.setdefault(f"assets/{ns}/lang/en_us.json", {})[f"block.{ns}.{cid}"] = cfg["name"]
         elif kind == "item":

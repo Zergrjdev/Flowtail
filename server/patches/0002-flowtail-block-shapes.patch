@@ -1,0 +1,328 @@
+diff --git a/paper-api/src/main/java/org/bukkit/Server.java b/paper-api/src/main/java/org/bukkit/Server.java
+index d30cccedeb..8b6271d3da 100644
+--- a/paper-api/src/main/java/org/bukkit/Server.java
++++ b/paper-api/src/main/java/org/bukkit/Server.java
+@@ -65,6 +65,7 @@ import org.bukkit.generator.structure.Structure;
+ import org.bukkit.map.MapCursor;
+ import org.bukkit.structure.StructureManager;
+ import org.bukkit.util.CachedServerIcon;
++import org.bukkit.util.BoundingBox;
+ import org.jetbrains.annotations.ApiStatus;
+ import org.jetbrains.annotations.Contract;
+ import org.jetbrains.annotations.NotNull;
+@@ -726,6 +727,26 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+     @NotNull
+     public List<World> getWorlds();
+ 
++    /**
++     * Registers temporary, block-local collision and outline boxes for an actual barrier block. This is intended for
++     * server-owned virtual blocks whose ids and state are persisted by the registering plugin. Boxes are expressed in
++     * coordinates from 0 to 1 relative to the block. The owner must restore registrations after a chunk loads and clear
++     * them when disabled; registrations are not written to world data.
++     *
++     * @param owner plugin that owns the virtual block and registration
++     * @param block barrier block that represents the virtual block
++     * @param collision boxes used for movement and entity collision
++     * @param outline boxes used for block targeting
++     */
++    public void setCustomBlockShapes(@NotNull org.bukkit.plugin.Plugin owner, @NotNull org.bukkit.block.Block block,
++            @NotNull Collection<BoundingBox> collision, @NotNull Collection<BoundingBox> outline);
++
++    /** Removes a custom shape registration at the block when owned by {@code owner}. */
++    public void clearCustomBlockShape(@NotNull org.bukkit.plugin.Plugin owner, @NotNull org.bukkit.block.Block block);
++
++    /** Removes every custom shape registration owned by {@code owner}. */
++    public void clearCustomBlockShapes(@NotNull org.bukkit.plugin.Plugin owner);
++
+     // Paper start
+     /**
+      * Gets whether the worlds are being ticked right now.
+diff --git a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 549864ac47..bf85af716c 100644
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -29,8 +29,10 @@ import java.nio.charset.StandardCharsets;
+ import java.nio.file.Path;
+ import java.util.ArrayList;
+ import java.util.Collections;
++import java.util.Collection;
+ import java.util.Date;
+ import java.util.HashSet;
++import java.util.IdentityHashMap;
+ import java.util.Iterator;
+ import java.util.LinkedHashMap;
+ import java.util.LinkedHashSet;
+@@ -40,6 +42,7 @@ import java.util.Map;
+ import java.util.Optional;
+ import java.util.Set;
+ import java.util.UUID;
++import java.util.WeakHashMap;
+ import java.util.function.Consumer;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
+@@ -100,6 +103,10 @@ import net.minecraft.world.level.CustomSpawner;
+ import net.minecraft.world.level.GameType;
+ import net.minecraft.world.level.biome.BiomeManager;
+ import net.minecraft.world.level.block.Block;
++import net.minecraft.world.level.chunk.LevelChunk;
++import net.minecraft.world.level.chunk.status.ChunkStatus;
++import net.minecraft.world.phys.shapes.Shapes;
++import net.minecraft.world.phys.shapes.VoxelShape;
+ import net.minecraft.world.level.dimension.LevelStem;
+ import net.minecraft.world.level.levelgen.PatrolSpawner;
+ import net.minecraft.world.level.levelgen.PhantomSpawner;
+@@ -135,6 +142,7 @@ import org.bukkit.World.Environment;
+ import org.bukkit.WorldBorder;
+ import org.bukkit.WorldCreator;
+ import org.bukkit.block.BlockType;
++import org.bukkit.craftbukkit.CraftChunk;
+ import org.bukkit.block.data.BlockData;
+ import org.bukkit.boss.BarColor;
+ import org.bukkit.boss.BarFlag;
+@@ -235,6 +243,7 @@ import org.bukkit.scheduler.BukkitWorker;
+ import org.bukkit.scoreboard.Criteria;
+ import org.bukkit.structure.StructureManager;
+ import org.bukkit.util.StructureSearchResult;
++import org.bukkit.util.BoundingBox;
+ import org.bukkit.util.permissions.DefaultPermissions;
+ import org.jetbrains.annotations.ApiStatus;
+ import org.jetbrains.annotations.NotNull;
+@@ -249,6 +258,8 @@ public final class CraftServer implements Server {
+     private final String serverVersion;
+     private final String bukkitVersion = Versioning.getBukkitVersion();
+     private final Logger logger = Logger.getLogger("Minecraft");
++    // FlowTail - transient shape registrations are grouped by plugin owner; chunks are weakly held so unloading stays cheap.
++    private final Map<Plugin, Set<LevelChunk>> flowtail$shapeChunks = new IdentityHashMap<>();
+     private final ServicesManager servicesManager = new SimpleServicesManager();
+     private final CraftScheduler scheduler = new CraftScheduler();
+     private final CraftCommandMap commandMap; // Paper - Move down
+@@ -886,6 +897,61 @@ public final class CraftServer implements Server {
+         return new ArrayList<World>(this.worlds.values());
+     }
+ 
++    // FlowTail start - per-position shapes for add-only plugin blocks
++    @Override
++    public void setCustomBlockShapes(final Plugin owner, final org.bukkit.block.Block block,
++            final Collection<BoundingBox> collision, final Collection<BoundingBox> outline) {
++        org.spigotmc.AsyncCatcher.catchOp("set custom block shapes");
++        Preconditions.checkArgument(owner != null && owner.getServer() == this, "owner must belong to this server");
++        Preconditions.checkArgument(block != null && this.getWorld(block.getWorld().getUID()) == block.getWorld(), "block must belong to this server");
++        Preconditions.checkArgument(block.getType() == org.bukkit.Material.BARRIER,
++                "custom shapes may only be registered for a real barrier block");
++        Preconditions.checkArgument(collision != null && outline != null, "shape collections cannot be null");
++        LevelChunk chunk = (LevelChunk) ((CraftChunk) block.getChunk()).getHandle(ChunkStatus.FULL);
++        net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(block.getX(), block.getY(), block.getZ());
++        chunk.flowtail$setBlockShapes(pos, owner, flowtail$toShape(collision), flowtail$toShape(outline));
++        Set<LevelChunk> chunks = this.flowtail$shapeChunks.get(owner);
++        if (chunks == null) {
++            chunks = Collections.newSetFromMap(new WeakHashMap<>());
++            this.flowtail$shapeChunks.put(owner, chunks);
++        }
++        chunks.add(chunk);
++    }
++
++    @Override
++    public void clearCustomBlockShape(final Plugin owner, final org.bukkit.block.Block block) {
++        org.spigotmc.AsyncCatcher.catchOp("clear custom block shape");
++        Preconditions.checkArgument(owner != null && owner.getServer() == this, "owner must belong to this server");
++        Preconditions.checkArgument(block != null && this.getWorld(block.getWorld().getUID()) == block.getWorld(), "block must belong to this server");
++        LevelChunk chunk = (LevelChunk) ((CraftChunk) block.getChunk()).getHandle(ChunkStatus.FULL);
++        chunk.flowtail$clearBlockShape(new net.minecraft.core.BlockPos(block.getX(), block.getY(), block.getZ()), owner);
++    }
++
++    @Override
++    public void clearCustomBlockShapes(final Plugin owner) {
++        org.spigotmc.AsyncCatcher.catchOp("clear custom block shapes");
++        Preconditions.checkArgument(owner != null && owner.getServer() == this, "owner must belong to this server");
++        Set<LevelChunk> chunks = this.flowtail$shapeChunks.remove(owner);
++        if (chunks != null) for (LevelChunk chunk : chunks) chunk.flowtail$clearBlockShapes(owner);
++    }
++
++    private static VoxelShape flowtail$toShape(final Collection<BoundingBox> boxes) {
++        VoxelShape shape = Shapes.empty();
++        for (BoundingBox box : boxes) {
++            Preconditions.checkArgument(box != null && Double.isFinite(box.getMinX()) && Double.isFinite(box.getMinY())
++                    && Double.isFinite(box.getMinZ()) && Double.isFinite(box.getMaxX()) && Double.isFinite(box.getMaxY())
++                    && Double.isFinite(box.getMaxZ()), "shape boxes must have finite coordinates");
++            Preconditions.checkArgument(box.getMinX() >= 0.0 && box.getMinY() >= 0.0 && box.getMinZ() >= 0.0
++                    && box.getMaxX() <= 1.0 && box.getMaxY() <= 1.0 && box.getMaxZ() <= 1.0
++                    && box.getMinX() < box.getMaxX() && box.getMinY() < box.getMaxY() && box.getMinZ() < box.getMaxZ(),
++                    "shape boxes must be non-empty and within the unit block");
++            shape = Shapes.or(shape, Shapes.box(box.getMinX(), box.getMinY(), box.getMinZ(),
++                    box.getMaxX(), box.getMaxY(), box.getMaxZ()));
++        }
++        return shape.optimize();
++    }
++    // FlowTail end
++
+     @Override
+     public boolean isTickingWorlds() {
+         return console.isIteratingOverLevels;
+--- a/paper-server/src/minecraft/java/net/minecraft/world/level/block/state/BlockBehaviour.java
++++ b/paper-server/src/minecraft/java/net/minecraft/world/level/block/state/BlockBehaviour.java
+@@ -60,6 +60,7 @@
+ import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.level.block.entity.BlockEntityTicker;
+ import net.minecraft.world.level.block.entity.BlockEntityType;
++import net.minecraft.world.level.chunk.LevelChunk;
+ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+ import net.minecraft.world.level.block.state.properties.Property;
+ import net.minecraft.world.level.material.Fluid;
+@@ -864,26 +865,52 @@
+         }
+ 
+         public VoxelShape getShape(final BlockGetter level, final BlockPos pos, final CollisionContext context) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, true);
++            if (flowtailShape != null) return flowtailShape;
+             return this.getBlock().getShape(this.asState(), level, pos, context);
+         }
+ 
+         public VoxelShape getCollisionShape(final BlockGetter level, final BlockPos pos) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return flowtailShape;
+             return this.cache != null ? this.cache.collisionShape : this.getCollisionShape(level, pos, CollisionContext.empty());
+         }
+ 
+         public VoxelShape getCollisionShape(final BlockGetter level, final BlockPos pos, final CollisionContext context) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return flowtailShape;
+             return this.getBlock().getCollisionShape(this.asState(), level, pos, context);
+         }
+ 
++        // FlowTail start - block-local shape lookup stays on available chunks and never loads a chunk
++        private @Nullable VoxelShape flowtail$getShape(final BlockGetter level, final BlockPos pos, final boolean outline) {
++            if (this.blockOwner != Blocks.BARRIER) return null;
++            BlockGetter chunk = level;
++            if (!(chunk instanceof LevelChunk)) {
++                if (!(level instanceof LevelReader reader)) return null;
++                chunk = reader.getChunkForCollisions(pos.getX() >> 4, pos.getZ() >> 4);
++            }
++            if (!(chunk instanceof LevelChunk levelChunk)) return null;
++            LevelChunk.FlowTailBlockShapes shapes = levelChunk.flowtail$getBlockShapes(pos);
++            return shapes == null ? null : outline ? shapes.outline() : shapes.collision();
++        }
++        // FlowTail end
++
+         public VoxelShape getEntityInsideCollisionShape(final BlockGetter level, final BlockPos pos, final Entity entity) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return flowtailShape;
+             return this.getBlock().getEntityInsideCollisionShape(this.asState(), level, pos, entity);
+         }
+ 
+         public VoxelShape getBlockSupportShape(final BlockGetter level, final BlockPos pos) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return flowtailShape;
+             return this.getBlock().getBlockSupportShape(this.asState(), level, pos);
+         }
+ 
+         public VoxelShape getVisualShape(final BlockGetter level, final BlockPos pos, final CollisionContext context) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return flowtailShape;
+             return this.getBlock().getVisualShape(this.asState(), level, pos, context);
+         }
+ 
+@@ -1001,6 +1028,10 @@
+         }
+ 
+         public boolean isSuffocating(final BlockGetter level, final BlockPos pos) {
++            if (this.blockOwner == Blocks.BARRIER) {
++                VoxelShape shape = this.flowtail$getShape(level, pos, false);
++                if (shape != null) return Block.isShapeFullBlock(shape);
++            }
+             return this.isSuffocating.test(this.asState(), level, pos);
+         }
+ 
+@@ -1093,10 +1124,15 @@
+         }
+ 
+         public boolean isFaceSturdy(final BlockGetter level, final BlockPos pos, final Direction direction, final SupportType supportType) {
++            if (this.flowtail$getShape(level, pos, false) != null) {
++                return supportType.isSupporting(this.asState(), level, pos, direction);
++            }
+             return this.cache != null ? this.cache.isFaceSturdy(direction, supportType) : supportType.isSupporting(this.asState(), level, pos, direction);
+         }
+ 
+         public boolean isCollisionShapeFullBlock(final BlockGetter level, final BlockPos pos) {
++            VoxelShape flowtailShape = this.flowtail$getShape(level, pos, false);
++            if (flowtailShape != null) return Block.isShapeFullBlock(flowtailShape);
+             return this.cache != null ? this.cache.isCollisionShapeFullBlock : this.getBlock().isCollisionShapeFullBlock(this.asState(), level, pos);
+         }
+ 
+--- a/paper-server/src/minecraft/java/net/minecraft/world/level/chunk/LevelChunk.java
++++ b/paper-server/src/minecraft/java/net/minecraft/world/level/chunk/LevelChunk.java
+@@ -56,10 +56,12 @@
+ import net.minecraft.world.level.material.Fluid;
+ import net.minecraft.world.level.material.FluidState;
+ import net.minecraft.world.level.material.Fluids;
++import net.minecraft.world.phys.shapes.VoxelShape;
+ import net.minecraft.world.level.storage.TagValueInput;
+ import net.minecraft.world.ticks.LevelChunkTicks;
+ import net.minecraft.world.ticks.TickContainerAccess;
+ import org.jspecify.annotations.Nullable;
++import org.bukkit.plugin.Plugin;
+ import org.slf4j.Logger;
+ 
+ public class LevelChunk extends ChunkAccess implements DebugValueSource, ca.spottedleaf.moonrise.patches.chunk_system.level.chunk.ChunkSystemLevelChunk, ca.spottedleaf.moonrise.patches.starlight.chunk.StarlightChunk, ca.spottedleaf.moonrise.patches.getblock.GetBlockChunk { // Paper - rewrite chunk system // Paper - get block chunk optimisation
+@@ -98,6 +100,32 @@
+     public boolean needsDecoration;
+     // CraftBukkit end
+ 
++    // FlowTail start - transient per-position shapes for add-only virtual blocks; plugin records remain the persistence source
++    private final Map<Long, FlowTailBlockShapes> flowtail$blockShapes = new java.util.HashMap<>();
++
++    public record FlowTailBlockShapes(Plugin owner, VoxelShape collision, VoxelShape outline) {}
++
++    public void flowtail$setBlockShapes(final BlockPos pos, final Plugin owner, final VoxelShape collision, final VoxelShape outline) {
++        this.flowtail$blockShapes.put(pos.asLong(), new FlowTailBlockShapes(owner, collision, outline));
++    }
++
++    public void flowtail$clearBlockShape(final BlockPos pos, final Plugin owner) {
++        FlowTailBlockShapes current = this.flowtail$blockShapes.get(pos.asLong());
++        if (current != null && current.owner() == owner) this.flowtail$blockShapes.remove(pos.asLong());
++    }
++
++    public void flowtail$clearBlockShapes(final Plugin owner) {
++        this.flowtail$blockShapes.entrySet().removeIf(entry -> entry.getValue().owner() == owner);
++    }
++
++    public @Nullable FlowTailBlockShapes flowtail$getBlockShapes(final BlockPos pos) {
++        return this.flowtail$blockShapes.get(pos.asLong());
++    }
++
++    public boolean flowtail$hasBlockShapes(final BlockPos pos) {
++        return this.flowtail$blockShapes.containsKey(pos.asLong());
++    }
++    // FlowTail end
+ 
+     // Paper start
+     boolean loadedTicketLevel;
+@@ -384,6 +412,7 @@
+         if (oldState == state) {
+             return null;
+         }
++        if (!state.is(Blocks.BARRIER)) this.flowtail$blockShapes.remove(pos.asLong()); // FlowTail - forget a transient shape when its barrier is removed
+ 
+         Block newBlock = state.getBlock();
+         this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING).update(localX, y, localZ, state);
+--- a/paper-server/src/minecraft/java/net/minecraft/world/level/BlockCollisions.java
++++ b/paper-server/src/minecraft/java/net/minecraft/world/level/BlockCollisions.java
+@@ -9,6 +9,7 @@
+ import net.minecraft.world.entity.Entity;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.state.BlockState;
++import net.minecraft.world.level.chunk.LevelChunk;
+ import net.minecraft.world.phys.AABB;
+ import net.minecraft.world.phys.shapes.BooleanOp;
+ import net.minecraft.world.phys.shapes.CollisionContext;
+@@ -87,8 +88,10 @@
+                 if (chunk != null) {
+                     this.pos.set(x, y, z);
+                     BlockState blockState = chunk.getBlockState(this.pos);
++                    boolean flowtailCustomShape = blockState.is(Blocks.BARRIER) && chunk instanceof LevelChunk levelChunk
++                        && levelChunk.flowtail$hasBlockShapes(this.pos);
+                     if ((!this.onlySuffocatingBlocks || blockState.isSuffocating(chunk, this.pos))
+-                        && (cursorFaceType != Cursor3D.TYPE_FACE || blockState.hasLargeCollisionShape())
++                        && (cursorFaceType != Cursor3D.TYPE_FACE || blockState.hasLargeCollisionShape() || flowtailCustomShape)
+                         && (cursorFaceType != Cursor3D.TYPE_EDGE || blockState.is(Blocks.MOVING_PISTON))) {
+                         VoxelShape blockShape = this.context.getCollisionShape(blockState, this.collisionGetter, this.pos);
+                         if (blockShape == Shapes.block()) {

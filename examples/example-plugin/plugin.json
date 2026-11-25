@@ -1,10 +1,13 @@
 {
   "schema": 0,
   "id": "example",
-  "name": "Example Plugin",
+  "name": "River Fishing",
   "version": "0.1.0",
-  "authors": ["you"],
+  "authors": [
+    "you"
+  ],
   "api": "0.x",
   "main": "com.example.ExamplePlugin",
-  "dependencies": []
+  "dependencies": [],
+  "description": "Fishing themed items and a bait crate for Phase 2 content demos."
 }

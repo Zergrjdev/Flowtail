@@ -1,0 +1,25 @@
+{
+  "schema": 0,
+  "id": "weave_stairs",
+  "name": "Woven Stairs",
+  "template": "stairs",
+  "textures": {
+    "all": "texture.png"
+  },
+  "drops": {
+    "type": "self"
+  },
+  "sounds": {
+    "preset": "wood"
+  },
+  "item": {
+    "auto": true,
+    "stack_size": 64
+  },
+  "mining": {
+    "hardness": 1.0,
+    "tool": "axe",
+    "tier": "none",
+    "requires_tool": false
+  }
+}

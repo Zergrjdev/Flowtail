@@ -3,3 +3,7 @@ version: 0.1.0
 main: dev.flowtail.benchplugin.BenchMetricsPlugin
 api-version: '26.3'
 description: Local-only tick and garbage collection metrics for FlowTail benchmarks
+commands:
+  hitboxprobe:
+    description: Runs a local invisible Shulker hitbox geometry and tick-cost probe
+    usage: /hitboxprobe

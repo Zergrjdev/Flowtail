@@ -47,7 +47,7 @@ class T(unittest.TestCase):
     def test_example_builds(self):
         out, rep = self.build(EXAMPLE)
         self.assertTrue(rep.ok, [str(d) for d in rep.errors]); self.assertTrue(out.is_file())
-        self.assertEqual([d.code for d in rep.warnings], ["W-TEMPLATE-LATER"])
+        self.assertEqual([d.code for d in rep.warnings], [])
 
     def test_error_has_file_line_and_fix(self):
         p = make_plugin(self.td)
@@ -92,7 +92,7 @@ class T(unittest.TestCase):
         _, rep = self.build(p)
         self.assertEqual([x.code for x in rep.errors], ["E-TEXTURE"]); self.assertIn("32x16", rep.errors[0].fix)
 
-    def test_deterministic_and_stable_slots(self):
+    def test_deterministic_and_add_only_ids(self):
         p = make_plugin(self.td, blocks=("aaa", "bbb"))
         o1, r = self.build(p); self.assertTrue(o1)
         def pack(out, state):
@@ -100,42 +100,51 @@ class T(unittest.TestCase):
         i1, _ = pack(self.td / "p1", self.td / "s")
         i2, _ = pack(self.td / "p2", self.td / "s")
         self.assertEqual(i1["sha1"], i2["sha1"])
-        alloc = json.loads((self.td / "s/allocations.json").read_text())["pools"]["cube.note_block"]["slots"]
-        first = {k: v["state"] for k, v in alloc.items()}
+        alloc = json.loads((self.td / "s/allocations.json").read_text())["blocks"]
         # add a block that sorts BEFORE the others: old slots must not move
         p2 = make_plugin(self.td / "..", pid="demo") if False else p
         d = p / "blocks" / "A0"; d.mkdir(); (d / "texture.png").write_bytes(png(16, 16))
         (d / "config.json").write_text(json.dumps({"schema": 0, "id": "a0", "name": "A0", "template": "cube", "textures": {"all": "texture.png"}}))
         o2, _ = self.build(p)
         i3, _ = pack(self.td / "p3", self.td / "s")
-        alloc2 = json.loads((self.td / "s/allocations.json").read_text())["pools"]["cube.note_block"]["slots"]
-        for k, v in first.items(): self.assertEqual(alloc2[k]["state"], v)
-        self.assertNotIn(alloc2["demo:a0"]["state"], first.values())
+        alloc2 = json.loads((self.td / "s/allocations.json").read_text())["blocks"]
+        for k, v in alloc.items(): self.assertEqual(alloc2[k], v)
+        self.assertTrue(alloc2["demo:a0"])
 
-    def test_removed_block_keeps_slot_and_is_never_reused(self):
+    def test_removed_block_id_is_retained_as_retired(self):
         p = make_plugin(self.td, blocks=("aaa", "bbb"))
         o, _ = self.build(p)
         rep = Report(); build_pack([o], self.td / "s", self.td / "p1", 97, rep)
-        slots = json.loads((self.td / "s/allocations.json").read_text())["pools"]["cube.note_block"]["slots"]
+        known = json.loads((self.td / "s/allocations.json").read_text())["blocks"]
         shutil.rmtree(p / "blocks" / "Aaa")
         o, _ = self.build(p)
         rep = Report(); build_pack([o], self.td / "s", self.td / "p2", 97, rep)
-        self.assertTrue(any(d.code == "W-BLOCK-RETIRED" for d in rep.warnings))
-        slots2 = json.loads((self.td / "s/allocations.json").read_text())["pools"]["cube.note_block"]["slots"]
-        self.assertTrue(slots2["demo:aaa"]["retired"]); self.assertEqual(slots2["demo:aaa"]["state"], slots["demo:aaa"]["state"])
+        known2 = json.loads((self.td / "s/allocations.json").read_text())["blocks"]
+        self.assertFalse(known2["demo:aaa"]); self.assertTrue(known["demo:aaa"])
         reg = json.loads((self.td / "p2/registry.json").read_text())
         self.assertEqual(reg["retired_blocks"], ["demo:aaa"])
-        bs = json.load(zipfile.ZipFile(self.td / "p2/pack.zip").open("assets/minecraft/blockstates/note_block.json"))["variants"]
-        k = ",".join(f"{n}={slots['demo:aaa']['state'][n]}" for n in sorted(slots["demo:aaa"]["state"]))
-        self.assertEqual(bs[k]["model"], "minecraft:block/barrier")
+        with zipfile.ZipFile(self.td / "p2/pack.zip") as pack:
+            self.assertNotIn("assets/minecraft/blockstates/note_block.json", pack.namelist())
 
-    def test_blockstates_cover_every_state_and_keep_vanilla(self):
+    def test_legacy_carrier_allocations_migrate_to_ids(self):
+        p = make_plugin(self.td); archive, _ = self.build(p)
+        state = self.td / "legacy-state"; state.mkdir()
+        legacy = {"schema": 0, "pools": {"cube.note_block": {"block": "minecraft:note_block", "slots": {
+            "old:stone": {"state": {"instrument": "harp", "note": "4", "powered": "true"}, "retired": False}
+        }}}}
+        (state / "allocations.json").write_text(json.dumps(legacy))
+        rep = Report(); build_pack([archive], state, self.td / "legacy-pack", 97, rep)
+        migrated = json.loads((state / "allocations.json").read_text())
+        self.assertNotIn("pools", migrated)
+        self.assertFalse(migrated["blocks"]["old:stone"])
+        self.assertEqual(json.loads((self.td / "legacy-pack/registry.json").read_text())["retired_blocks"], ["old:stone"])
+
+    def test_pack_never_overrides_vanilla_blockstates(self):
         p = make_plugin(self.td); o, _ = self.build(p)
         rep = Report(); build_pack([o], self.td / "s", self.td / "pk", 97, rep)
-        bs = json.load(zipfile.ZipFile(self.td / "pk/pack.zip").open("assets/minecraft/blockstates/note_block.json"))["variants"]
-        self.assertEqual(len(bs), 27 * 25 * 2)
-        self.assertEqual(bs["instrument=harp,note=0,powered=false"]["model"], "minecraft:block/note_block")
-        self.assertEqual(sum(1 for v in bs.values() if v["model"] == "demo:block/rock"), 1)
+        with zipfile.ZipFile(self.td / "pk/pack.zip") as pack:
+            self.assertFalse(any(name.startswith("assets/minecraft/blockstates/") for name in pack.namelist()))
+            self.assertFalse(any(name.startswith("assets/minecraft/models/block/") for name in pack.namelist()))
 
     def test_pack_conflict_reported(self):
         a = make_plugin(self.td, "pa", ("x",)); b = make_plugin(self.td, "pb", ("y",))
@@ -155,6 +164,22 @@ class T(unittest.TestCase):
         rep = Report(); info = build_pack([oa, ob], self.td / "s2", self.td / "pk2", 97, rep, on_conflict="error")
         self.assertFalse(info)
 
+    def test_plugins_cannot_override_vanilla_block_assets(self):
+        p = make_plugin(self.td); archive, _ = self.build(p)
+        with zipfile.ZipFile(archive) as z: files = {name: z.read(name) for name in z.namelist()}
+        manifest = json.loads(files["manifest.json"])
+        path = "pack/assets/minecraft/blockstates/note_block.json"
+        files[path] = b"{}"
+        import hashlib
+        manifest["files"][path] = hashlib.sha256(files[path]).hexdigest()
+        files["manifest.json"] = json.dumps(manifest).encode()
+        archive.unlink()
+        with zipfile.ZipFile(archive, "w") as z:
+            for name, data in files.items(): z.writestr(name, data)
+        rep = Report(); info = build_pack([archive], self.td / "s", self.td / "pk", 97, rep)
+        self.assertFalse(info)
+        self.assertIn("E-VANILLA-BLOCK-OVERRIDE", [d.code for d in rep.errors])
+
     def test_damaged_plugin_detected(self):
         p = make_plugin(self.td); o, _ = self.build(p)
         with zipfile.ZipFile(o) as z: files = {n: z.read(n) for n in z.namelist()}
@@ -164,14 +189,11 @@ class T(unittest.TestCase):
             for n, d in files.items(): z.writestr(n, d)
         with self.assertRaises(SystemExit): build_pack([o], self.td / "s", self.td / "pk", 97, Report())
 
-    def test_blocks_report_is_used(self):
-        report = {"minecraft:note_block": {"properties": {"instrument": ["harp", "bass"], "note": ["0", "1"], "powered": ["true", "false"]}}}
-        rp = self.td / "blocks.json"; rp.write_text(json.dumps(report))
+    def test_packs_never_generate_vanilla_blockstates(self):
         p = make_plugin(self.td); o, _ = self.build(p)
-        rep = Report(); build_pack([o], self.td / "s", self.td / "pk", 97, rep, blocks_report=rp)
-        self.assertFalse(any(d.code == "W-CARRIER-UNVERIFIED" for d in rep.warnings))
-        bs = json.load(zipfile.ZipFile(self.td / "pk/pack.zip").open("assets/minecraft/blockstates/note_block.json"))["variants"]
-        self.assertEqual(len(bs), 8)
+        rep = Report(); build_pack([o], self.td / "s", self.td / "pk", 97, rep)
+        with zipfile.ZipFile(self.td / "pk/pack.zip") as pack:
+            self.assertNotIn("assets/minecraft/blockstates/note_block.json", pack.namelist())
 
     def test_resource_pack_minor_format_is_preserved(self):
         p = make_plugin(self.td); o, _ = self.build(p)
@@ -181,12 +203,63 @@ class T(unittest.TestCase):
         self.assertEqual(meta["pack"]["max_format"], [97, 1])
         self.assertEqual(json.loads((self.td / "pk/registry.json").read_text())["pack_format"], [97, 1])
 
-    def test_note_block_fallback_includes_26_3_instruments(self):
-        from ftc.carriers import FALLBACK_NOTE_BLOCK
-        self.assertEqual(len(FALLBACK_NOTE_BLOCK["instrument"]), 27)
-        self.assertEqual(FALLBACK_NOTE_BLOCK["instrument"][16:20], [
-            "trumpet", "trumpet_exposed", "trumpet_oxidized", "trumpet_weathered"
-        ])
+    def _block_config(self, p, **extra):
+        cfg = p / "blocks" / "Rock" / "config.json"
+        data = json.loads(cfg.read_text())
+        data.update(extra)
+        cfg.write_text(json.dumps(data, indent=1))
+        return cfg
+
+    def _content(self, out):
+        with zipfile.ZipFile(out) as z:
+            return json.loads(z.read("content.json"))
+
+    def test_block_registry_has_no_carrier_inheritance(self):
+        p = make_plugin(self.td)
+        out, rep = self.build(p)
+        self.assertTrue(rep.ok, [str(d) for d in rep.errors])
+        block = self._content(out)["blocks"][0]
+        self.assertNotIn("carrier_inherit", block)
+        self.assertNotIn("base", block["item"])
+
+    def test_legacy_carrier_inherit_is_ignored_but_item_base_is_kept(self):
+        p = make_plugin(self.td)
+        self._block_config(p, carrier_inherit=["note_sound"], item={"auto": True, "base": "minecraft:note_block"})
+        out, rep = self.build(p)
+        self.assertTrue(rep.ok, [str(d) for d in rep.errors])
+        self.assertEqual([d.code for d in rep.warnings], ["W-UNKNOWN-KEY"])
+        block = self._content(out)["blocks"][0]
+        self.assertNotIn("carrier_inherit", block)
+        self.assertEqual(block["item"]["base"], "minecraft:note_block")
+
+    def test_legacy_carrier_inherit_values_do_not_affect_vanilla_behavior(self):
+        p = make_plugin(self.td)
+        cfg = self._block_config(p, carrier_inherit=["note_sond", 5], item={"base": "Paper"})
+        out, rep = self.build(p)
+        self.assertIsNone(out)
+        codes = [d.code for d in rep.errors]
+        self.assertIn("E-RESID", codes)
+        self.assertTrue(all(d.fix for d in rep.errors))
+        self.assertIn("W-UNKNOWN-KEY", [d.code for d in rep.warnings])
+
+    def test_legacy_carrier_inherit_warns_once(self):
+        p = make_plugin(self.td)
+        self._block_config(p, carrier_inherit=["note_sound", "note_sound"])
+        out, rep = self.build(p)
+        self.assertTrue(rep.ok)
+        self.assertEqual([d.code for d in rep.warnings], ["W-UNKNOWN-KEY"])
+
+    def test_block_without_auto_item_still_gets_display_item_model(self):
+        # The display entity renders item_model "<ns>:<id>" even when the block has no giveable item.
+        p = make_plugin(self.td)
+        self._block_config(p, item={"auto": False})
+        out, rep = self.build(p)
+        self.assertTrue(rep.ok, [str(d) for d in rep.errors])
+        with zipfile.ZipFile(out) as z:
+            names = z.namelist()
+        item_defs = [n for n in names if n.startswith("pack/assets/") and "/items/" in n]
+        self.assertEqual(len(item_defs), 1, names)
+        self.assertFalse(self._content(out)["blocks"][0]["item"]["auto"])
 
 
 if __name__ == "__main__":

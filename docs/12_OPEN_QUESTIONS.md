@@ -31,5 +31,8 @@ Format: `N QUESTION, A (...) B (...)`. User replies like `1a, 2b`. Agents: add n
 - Q24 DESKTOP SHELL -> A (Electron). Qt is an alternative; revisit only if Electron size/memory is a real problem (Phase 7 spike).
 - Q25 WORLD FORMAT -> A (survey existing formats, then design ours, vanilla converter). User also wants a compression-algorithm comparison (R-20).
 
+## Answered (2026-11-25)
+- Q26 PARTIAL COLLISION UNDER ADD-ONLY -> C (research first). The server-side Shulker probe ran on a disposable localhost Paper 26.3 server. `getBoundingBox()` stayed 1×1×1 for scale 1.0/0.5 and peek 0/1; idle tick measurements were inconclusive. No live vanilla client was available. See R-05 in `docs/11_RESEARCH_TASKS.md`. This is not a final collision design choice; Q27 asks what P3-02 should implement.
+- Q27 PARTIAL COLLISION IMPLEMENTATION -> C (user, 2026-11-25). Investigate FlowTail-owned collision in the server fork before changing template behavior; do not substitute a vanilla block. Recorded as ADR-031.
+
 ## Pending
-_(none — agents add new questions here as tasks need them)_

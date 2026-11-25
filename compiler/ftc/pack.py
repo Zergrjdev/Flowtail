@@ -14,11 +14,8 @@ from pathlib import Path
 
 from . import COMPILER_VERSION, SCHEMA
 from .build import ZIP_EPOCH, jdump
-from .carriers import all_states, key_of, load_properties, pool_slots
 from .diag import Report
 
-POOL = "cube.note_block"
-POOL_BLOCK = "minecraft:note_block"
 
 
 def _load_alloc(path: Path) -> dict:
@@ -27,7 +24,7 @@ def _load_alloc(path: Path) -> dict:
         if d.get("schema") != SCHEMA:
             raise SystemExit(f"error: {path} has schema {d.get('schema')}, expected {SCHEMA}")
         return d
-    return {"schema": SCHEMA, "pools": {POOL: {"block": POOL_BLOCK, "slots": {}}}}
+    return {"schema": SCHEMA, "blocks": {}}
 
 
 def read_plugin(path: Path) -> dict:
@@ -41,7 +38,7 @@ def read_plugin(path: Path) -> dict:
 
 
 def build_pack(plugin_paths: list[Path], state_dir: Path, out_dir: Path, pack_format: int | list[int], rep: Report,
-               blocks_report: Path | None = None, on_conflict: str = "first", description: str = "FlowTail content pack") -> dict:
+               on_conflict: str = "first", description: str = "FlowTail content pack") -> dict:
     # Keep direct Python callers that still pass a major-only format working;
     # the CLI/default from versions.toml always supplies [major, minor].
     if isinstance(pack_format, int):
@@ -55,15 +52,15 @@ def build_pack(plugin_paths: list[Path], state_dir: Path, out_dir: Path, pack_fo
         rep.error("plugins", 0, "E-DUPLICATE-PLUGIN", f"plugin id \"{i}\" appears more than once", "Remove the older .ftplugin file.")
     if not rep.ok:
         return {}
-    props, verified = load_properties(POOL_BLOCK, blocks_report)
-    if not verified:
-        rep.warn("carriers", 0, "W-CARRIER-UNVERIFIED", "carrier states come from the built-in fallback list, not the real server data",
-                 "Run scripts/gen-reports.sh and pass --blocks-report build/reports/reports/blocks.json.")
     state_dir.mkdir(parents=True, exist_ok=True)
     apath = state_dir / "allocations.json"
     alloc = _load_alloc(apath)
-    slots = alloc["pools"][POOL]["slots"]
-    free = [s for s in pool_slots(props) if key_of(s) not in {key_of(v["state"]) for v in slots.values()}]
+    known_blocks = alloc.setdefault("blocks", {})
+    # Keep legacy allocations readable for existing installs, but never assign or emit carrier states.
+    slots = alloc.get("pools", {}).get("cube.note_block", {}).get("slots", {})
+    for legacy_id, legacy_slot in slots.items():
+        known_blocks.setdefault(legacy_id, not legacy_slot.get("retired", False))
+    alloc.pop("pools", None)
 
     # registry (merged)
     reg = {"schema": SCHEMA, "compiler": COMPILER_VERSION, "pack_format": pack_format, "plugins": [], "blocks": [], "items": [], "paintings": []}
@@ -74,22 +71,17 @@ def build_pack(plugin_paths: list[Path], state_dir: Path, out_dir: Path, pack_fo
         reg["items"] += c["items"]; reg["paintings"] += c["paintings"]
         for b in c["blocks"]:
             live_blocks.add(b["id"])
-            if b["id"] not in slots:
-                if not free:
-                    rep.error(f"{b['id']}", 0, "E-POOL-FULL", f"no free carrier states left in pool {POOL}", "Remove unused blocks or wait for more carrier pools (roadmap P3-02).")
-                    continue
-                slots[b["id"]] = {"state": free.pop(0), "retired": False}
-            elif slots[b["id"]].get("retired"):
+            known_blocks[b["id"]] = True
+            if b["id"] in slots and slots[b["id"]].get("retired"):
                 slots[b["id"]]["retired"] = False
-            reg["blocks"].append({**b, "carrier": {"pool": POOL, "block": POOL_BLOCK, "state": slots[b["id"]]["state"]}})
-    for bid, v in slots.items():
-        if bid not in live_blocks and not v.get("retired"):
-            v["retired"] = True
-            rep.warn(bid, 0, "W-BLOCK-RETIRED", f"block {bid} is no longer provided; its carrier slot stays reserved",
-                     "Worlds that still contain it keep the block as an unknown block until the plugin returns.")
+            reg["blocks"].append(dict(b))
+    for bid in list(known_blocks):
+        if bid not in live_blocks:
+            known_blocks[bid] = False
+    retired_ids = sorted(bid for bid, live in known_blocks.items() if not live)
     if not rep.ok:
         return {}
-    reg["retired_blocks"] = sorted(b for b, v in slots.items() if v.get("retired"))
+    reg["retired_blocks"] = retired_ids
 
     # merge pack files
     merged: dict[str, bytes] = {}
@@ -100,6 +92,13 @@ def build_pack(plugin_paths: list[Path], state_dir: Path, out_dir: Path, pack_fo
             if not name.startswith("pack/"):
                 continue
             path = name[5:]
+            if (path.startswith("assets/minecraft/blockstates/")
+                    or path.startswith("assets/minecraft/models/block/")
+                    or path.startswith("assets/minecraft/textures/block/")):
+                rep.error(path, 0, "E-VANILLA-BLOCK-OVERRIDE",
+                          "plugins may not replace vanilla blockstates, block models, or block textures",
+                          "Put custom block assets in the plugin namespace and use the FlowTail item_model projection.")
+                continue
             if path in merged:
                 if merged[path] == data:
                     continue
@@ -114,21 +113,7 @@ def build_pack(plugin_paths: list[Path], state_dir: Path, out_dir: Path, pack_fo
             owner[path] = pid
     # language files in the same namespace are separate paths, so no merge is needed
 
-    # carrier blockstates: FULL variant list (vanilla states keep their vanilla model)
-    variants = {}
-    by_key = {key_of(v["state"]): bid for bid, v in slots.items()}
-    for st in all_states(props):
-        k = key_of(st)
-        bid = by_key.get(k)
-        model = None
-        if bid and bid in live_blocks:
-            model = next(b["model"] for b in reg["blocks"] if b["id"] == bid)
-        elif bid:
-            model = "minecraft:block/barrier"   # retired: visible placeholder, never another block's model
-        else:
-            model = "minecraft:block/note_block"
-        variants[",".join(f"{n}={st[n]}" for n in sorted(st))] = {"model": model}
-    merged["assets/minecraft/blockstates/note_block.json"] = jdump({"variants": variants})
+    # Add custom models and item definitions only. Never replace a vanilla blockstate or model.
     merged["pack.mcmeta"] = jdump({"pack": {"description": description, "min_format": pack_format, "max_format": pack_format}})
     if not rep.ok:
         return {}

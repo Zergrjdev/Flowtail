@@ -36,10 +36,14 @@ public final class BenchMetricsPlugin extends JavaPlugin implements Listener {
     private volatile double processCpuPercent = -1;
     private volatile long processRssMb = -1;
     private Path output;
+    private ShapeHitboxProbe hitboxProbe;
 
     @Override public void onEnable() {
         this.output = getDataFolder().toPath().resolve("metrics.json");
         getServer().getPluginManager().registerEvents(this, this);
+        this.hitboxProbe = new ShapeHitboxProbe(this);
+        getServer().getPluginManager().registerEvents(this.hitboxProbe, this);
+        if (getCommand("hitboxprobe") != null) getCommand("hitboxprobe").setExecutor(this.hitboxProbe);
         if (threadBean.isThreadCpuTimeSupported()) {
             try { threadBean.setThreadCpuTimeEnabled(true); } catch (SecurityException ignored) { }
         }
@@ -51,6 +55,10 @@ public final class BenchMetricsPlugin extends JavaPlugin implements Listener {
             }
         }
         getLogger().info("Local benchmark metrics enabled; output: " + output);
+    }
+
+    @Override public void onDisable() {
+        if (this.hitboxProbe != null) this.hitboxProbe.cleanup();
     }
 
     private void onGcNotification(Notification notification, Object ignored) {

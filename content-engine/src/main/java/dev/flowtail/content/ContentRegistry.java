@@ -23,14 +23,17 @@ public final class ContentRegistry {
     private final Map<String, JsonObject> blocks;
     private final Map<String, JsonObject> items;
     private final Map<String, JsonObject> paintings;
+    private final java.util.List<String> retiredBlocks;
 
     private ContentRegistry(Path source, Map<String, JsonObject> plugins, Map<String, JsonObject> blocks,
-                            Map<String, JsonObject> items, Map<String, JsonObject> paintings) {
+                            Map<String, JsonObject> items, Map<String, JsonObject> paintings,
+                            java.util.List<String> retiredBlocks) {
         this.source = source;
         this.plugins = immutable(plugins);
         this.blocks = immutable(blocks);
         this.items = immutable(items);
         this.paintings = immutable(paintings);
+        this.retiredBlocks = java.util.List.copyOf(retiredBlocks);
     }
 
     private static Map<String, JsonObject> immutable(Map<String, JsonObject> source) {
@@ -59,10 +62,17 @@ public final class ContentRegistry {
         Map<String, JsonObject> blocks = entries(file, root, "blocks", "id");
         Map<String, JsonObject> items = entries(file, root, "items", "id");
         Map<String, JsonObject> paintings = entries(file, root, "paintings", "id");
-        validateContent(file, plugins.keySet(), "blocks", blocks, true);
+        validateContent(file, plugins.keySet(), "blocks", blocks, false);
         validateContent(file, plugins.keySet(), "items", items, false);
         validateContent(file, plugins.keySet(), "paintings", paintings, false);
-        return new ContentRegistry(file, plugins, blocks, items, paintings);
+        java.util.List<String> retired = new java.util.ArrayList<>();
+        JsonElement retiredValue = root.get("retired_blocks");
+        if (retiredValue != null && retiredValue.isJsonArray()) {
+            for (JsonElement element : retiredValue.getAsJsonArray()) {
+                if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) retired.add(element.getAsString());
+            }
+        }
+        return new ContentRegistry(file, plugins, blocks, items, paintings, retired);
     }
 
     private static Map<String, JsonObject> entries(Path file, JsonObject root, String key, String idKey) {
@@ -171,4 +181,6 @@ public final class ContentRegistry {
     public Map<String, JsonObject> blocks() { return blocks; }
     public Map<String, JsonObject> items() { return items; }
     public Map<String, JsonObject> paintings() { return paintings; }
+    /** Block ids that were registered before but whose plugin is no longer installed (their ids stay reserved). */
+    public java.util.List<String> retiredBlocks() { return retiredBlocks; }
 }

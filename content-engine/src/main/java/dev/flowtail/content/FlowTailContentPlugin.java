@@ -19,6 +19,19 @@ public final class FlowTailContentPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new CreativeItemListener(this, itemPrototypes), this);
         getServer().getPluginManager().registerEvents(new ItemCommandListener(this, itemPrototypes, registry), this);
         verifyItemPrototypes(itemPrototypes, registry);
+        getServer().getPluginManager().registerEvents(new VanillaRecipeGuard(this, itemPrototypes), this);
+        ContentSettings blockSettings = ContentRuntime.settings();
+        BlockManager blockManager = new BlockManager(this, registry, itemPrototypes);
+        ContentRuntime.installBlocks(blockManager);
+        getServer().getPluginManager().registerEvents(new ContentCommand(this, registry, itemPrototypes, blockManager), this);
+        getServer().getPluginManager().registerEvents(new BlockListener(this, registry, itemPrototypes, blockManager), this);
+        getServer().getPluginManager().registerEvents(new BlockPickListener(this, registry, itemPrototypes, blockManager), this);
+        if (blockSettings.menu().enabled()) {
+            getServer().getPluginManager().registerEvents(new CustomItemsMenu(this, itemPrototypes, blockSettings.menu()), this);
+            getLogger().info("Menu ready: label=" + blockSettings.menu().label()
+                    + " custom_items_access=" + blockSettings.menu().itemsAccess() + " items=" + itemPrototypes.ids().size());
+        }
+        getLogger().info("Block engine ready: projection=barrier+item-display+interaction; vanilla_note_blocks=enabled");
         getLogger().info("Content engine ready: " + registry.blocks().size() + " blocks, "
                 + registry.items().size() + " items, " + registry.paintings().size() + " paintings");
         PackGenerator.Result pack = ContentRuntime.pack();
@@ -41,11 +54,12 @@ public final class FlowTailContentPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        getServer().clearCustomBlockShapes(this);
         if (packHost != null) packHost.close();
     }
 
     private void verifyItemPrototypes(ItemPrototypes prototypes, ContentRegistry registry) {
-        for (String id : registry.items().keySet()) {
+        for (String id : prototypes.ids()) {
             ItemStack created = prototypes.create(id);
             if (!prototypes.idOf(created).filter(id::equals).isPresent()) {
                 throw new IllegalStateException("Item prototype failed PDC reverse mapping plugin_id="
@@ -65,7 +79,7 @@ public final class FlowTailContentPlugin extends JavaPlugin {
             }
             verifyStackSizeAndOverlay(prototypes, id);
             getLogger().info("Verified item prototype plugin_id=" + id.substring(0, id.indexOf(':'))
-                    + " content_id=" + id + " item_model=" + registry.items().get(id).get("item_model").getAsString());
+                    + " content_id=" + id + " item_model=" + prototypes.itemModel(id));
         }
     }
 

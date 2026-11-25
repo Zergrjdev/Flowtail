@@ -14,15 +14,39 @@ import net.kyori.adventure.text.Component;
 /** Creates canonical vanilla-backed stacks for FlowTail items and maps returned stacks back to ids. */
 public final class ItemPrototypes {
     private static final NamespacedKey FLOWTAIL_ID = new NamespacedKey("flowtail", "id");
+    /**
+     * Base item of an auto-generated block item when the block does not say otherwise. Deliberately NOT the carrier:
+     * a block item has nothing to do with the note block unless the block sets {@code item.base} itself (ADR-022).
+     * It is not a block item, so FlowTail places the block itself ({@code BlockPlacer}).
+     */
+    public static final String DEFAULT_BLOCK_ITEM_BASE = "minecraft:paper";
 
-    private final ContentRegistry registry;
+    private final Map<String, JsonObject> definitions;
     private final Map<String, String> idByModel;
     private final java.util.Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public ItemPrototypes(ContentRegistry registry) {
-        this.registry = registry;
+        Map<String, JsonObject> defs = new java.util.LinkedHashMap<>(registry.items());
+        for (Map.Entry<String, JsonObject> entry : registry.blocks().entrySet()) {
+            JsonObject block = entry.getValue();
+            JsonObject itemSettings = block.has("item") && block.get("item").isJsonObject()
+                    ? block.getAsJsonObject("item") : new JsonObject();
+            boolean auto = !itemSettings.has("auto") || itemSettings.get("auto").getAsBoolean();
+            if (!auto) continue;
+            JsonObject item = new JsonObject();
+            item.addProperty("id", entry.getKey());
+            item.addProperty("base", itemSettings.has("base") && itemSettings.get("base").isJsonPrimitive()
+                    ? itemSettings.get("base").getAsString() : DEFAULT_BLOCK_ITEM_BASE);
+            item.addProperty("item_model", entry.getKey());
+            item.addProperty("name", string(block, "name"));
+            item.addProperty("stack_size", integer(itemSettings, "stack_size", 64));
+            if (defs.putIfAbsent(entry.getKey(), item) != null) {
+                throw new IllegalArgumentException("block " + entry.getKey() + " has the same id as an item");
+            }
+        }
+        this.definitions = java.util.Collections.unmodifiableMap(defs);
         Map<String, String> reverse = new HashMap<>();
-        for (Map.Entry<String, JsonObject> entry : registry.items().entrySet()) {
+        for (Map.Entry<String, JsonObject> entry : definitions.entrySet()) {
             String model = string(entry.getValue(), "item_model");
             String previous = reverse.putIfAbsent(model, entry.getKey());
             if (previous != null) throw new IllegalArgumentException("duplicate item_model " + model
@@ -31,10 +55,24 @@ public final class ItemPrototypes {
         this.idByModel = Map.copyOf(reverse);
     }
 
+    /** Every giveable FlowTail item id: registry items plus the auto-generated item of each block. */
+    public java.util.Set<String> ids() { return definitions.keySet(); }
+
+    public boolean has(String id) { return definitions.containsKey(id); }
+
+    public String itemModel(String id) { return string(definitions.get(id), "item_model"); }
+
+    /** The vanilla item a FlowTail item is physically made of. */
+    public Material baseOf(String id) {
+        JsonObject prototype = definitions.get(id);
+        if (prototype == null) throw new IllegalArgumentException("Unknown FlowTail item " + id);
+        return baseMaterial(id, prototype);
+    }
+
     public ItemStack create(String id) { return create(id, 1); }
 
     public ItemStack create(String id, int count) {
-        JsonObject prototype = registry.items().get(id);
+        JsonObject prototype = definitions.get(id);
         if (prototype == null) throw new IllegalArgumentException("Unknown FlowTail item " + id);
         Material base = baseMaterial(id, prototype);
         StackSizePolicy.Result stack = stackSize(id, prototype, base);
@@ -51,7 +89,7 @@ public final class ItemPrototypes {
 
     /** The maximum stack size a finished stack of this item has (damageable bases keep their own maximum of 1). */
     public int maxStackSize(String id) {
-        JsonObject prototype = registry.items().get(id);
+        JsonObject prototype = definitions.get(id);
         if (prototype == null) throw new IllegalArgumentException("Unknown FlowTail item " + id);
         return stackSize(id, prototype, baseMaterial(id, prototype)).effective();
     }
@@ -64,7 +102,7 @@ public final class ItemPrototypes {
     public ItemStack expand(ItemStack input) {
         Optional<String> id = idOf(input);
         if (id.isEmpty()) return input;
-        JsonObject prototype = registry.items().get(id.get());
+        JsonObject prototype = definitions.get(id.get());
         if (prototype == null) return input;
         Material base = Material.matchMaterial(string(prototype, "base"));
         if (base == null || !base.isItem()) return input;
@@ -80,7 +118,7 @@ public final class ItemPrototypes {
         if (stack == null || stack.getType().isAir() || !stack.hasItemMeta()) return Optional.empty();
         ItemMeta meta = stack.getItemMeta();
         String stored = meta.getPersistentDataContainer().get(FLOWTAIL_ID, PersistentDataType.STRING);
-        if (stored != null && registry.items().containsKey(stored)) return Optional.of(stored);
+        if (stored != null && definitions.containsKey(stored)) return Optional.of(stored);
         NamespacedKey model = meta.getItemModel();
         return model == null ? Optional.empty() : Optional.ofNullable(idByModel.get(model.toString()));
     }

@@ -26,3 +26,17 @@
 
 ## Compat note
 Because the base is a Paper fork, the Bukkit/Paper API exists underneath. Treat it as *unsupported legacy surface* until a deliberate compat decision (Phase 8).
+
+## Add-only block projection (ADR-024, package `dev.flowtail.content.api`)
+A custom block uses an item-display visual, barrier collision/selection, and an interaction entity. Vanilla block states and models remain unchanged:
+- `FlowTailBlockInteractEvent` (Bukkit event, cancellable): a player interacted with the custom block. It gives player, block, content id, hand and held item. Clicks that arrive through the interaction entity report the face computed from the click position (`ProjectionSpec.faceOfInteractionClick`, from Paper's `PlayerInteractAtEntityEvent#getClickedPosition`), falling back to `BlockFace.UP` only if that event did not arrive first. By default (ADR-025) clicks reach the barrier, not the entity, so the face is the real clicked face.
+- `FlowTailBlocks` (via `ContentRuntime.blocks()`): `idAt(Block)` and `isFlowTailBlock(Block)`.
+- Block items use `minecraft:paper` unless `item.base` is set; FlowTail places the block itself and fires a normal `BlockPlaceEvent`.
+Example listener:
+```java
+@EventHandler
+public void onRock(FlowTailBlockInteractEvent e) {
+    if (!e.getContentId().equals("example:rock")) return;
+    e.getPlayer().sendMessage("You touched a rock.");
+}
+```

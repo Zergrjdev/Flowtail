@@ -9,3 +9,6 @@ permissions:
   flowtail.give:
     description: Allows giving custom FlowTail items with /give.
     default: op
+  flowtail.content:
+    description: Allows the /content debug commands (list, inspect, missing, selftest).
+    default: op

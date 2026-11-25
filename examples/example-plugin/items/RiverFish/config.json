@@ -1,0 +1,11 @@
+{
+  "schema": 0,
+  "id": "river_fish",
+  "name": "River Fish",
+  "template": "generic",
+  "base": "minecraft:paper",
+  "texture": "texture.png",
+  "stack_size": 64,
+  "recipes": [],
+  "behaviors": {}
+}

@@ -52,6 +52,8 @@ public final class ContentBootstrap implements PluginBootstrap {
                 + " plugins=" + registry.plugins().size() + " blocks=" + registry.blocks().size()
                 + " items=" + registry.items().size() + " paintings=" + registry.paintings().size());
 
+        if (settings.menu().enabled()) MenuDialogs.register(context, settings.menu());
+
         context.getLifecycleManager().registerEventHandler(RegistryEvents.PAINTING_VARIANT.compose(), event -> {
             for (var entry : registry.paintings().entrySet()) {
                 String id = entry.getKey();
